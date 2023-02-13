@@ -1,0 +1,60 @@
+{
+    "name": "hot-glue",
+    "version": "0.0.0",
+    "description": "Toolkit for large-scale automated traffic analysis of mobile apps on Android and iOS.",
+    "bugs": "https://github.com/tweaselORG/hot-glue/issues",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tweaselORG/hot-glue.git"
+    },
+    "license": "MIT",
+    "author": "Benjamin Altpeter <hi@bn.al>",
+    "type": "module",
+    "main": "dist/index.js",
+    "source": "src/index.ts",
+    "types": "dist/index.d.ts",
+    "files": [
+        "/dist"
+    ],
+    "scripts": {
+        "build": "parcel build",
+        "fix": "yarn eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx --fix",
+        "lint": "tsc && eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx && git diff --check",
+        "prepack": "rm -rf dist && yarn build && yarn typedoc",
+        "test": "echo 'TODO: No tests specified yet.'",
+        "watch": "parcel watch"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged && tsc && typedoc && git add docs"
+        }
+    },
+    "lint-staged": {
+        "*.{ts,js,tsx,jsx,css,scss,json}": [
+            "prettier --write"
+        ],
+        "*.{ts,js,tsx,jsx}": [
+            "eslint --fix"
+        ]
+    },
+    "prettier": "@baltpeter/prettier-config",
+    "dependencies": {},
+    "devDependencies": {
+        "@baltpeter/eslint-config": "2.1.2",
+        "@baltpeter/prettier-config": "2.0.0",
+        "@baltpeter/tsconfig": "2.0.0",
+        "@parcel/packager-ts": "2.8.3",
+        "@parcel/transformer-typescript-types": "2.8.3",
+        "@typescript-eslint/eslint-plugin": "5.51.0",
+        "eslint": "8.34.0",
+        "eslint-plugin-eslint-comments": "3.2.0",
+        "eslint-plugin-import": "2.27.5",
+        "husky": "4.3.7",
+        "lint-staged": "13.1.1",
+        "parcel": "2.8.3",
+        "prettier": "2.8.4",
+        "typedoc": "0.23.25",
+        "typedoc-plugin-markdown": "3.14.0",
+        "typescript": "4.9.5"
+    }
+}
