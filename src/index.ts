@@ -1,7 +1,11 @@
 import type { SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { platformApi } from 'appstraction';
+import type { ExecaChildProcess } from 'execa';
+import { execa } from 'execa';
+import { readFile } from 'fs/promises';
 import timeout from 'p-timeout';
-import { dnsLookup } from './util';
+import { temporaryFile } from 'tempy';
+import { awaitProcessStart, dnsLookup, killProcess } from './util';
 
 export type HotGlueOptions<Platform extends SupportedPlatform> = {
     platform: Platform;
@@ -55,29 +59,50 @@ export const hotGlue = <Platform extends SupportedPlatform>(options: HotGlueOpti
             const version = await platform.getAppVersion(appPathMain);
             if (!id) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
 
+            const res: { app: { id: string; version?: string }; traffic: Record<string, string> } = {
+                app: { id, version },
+                traffic: {},
+            };
+
             const installApp = () => platform.installApp(getAppPathAll(appPath).join(' '));
             const setAppPermissions = (permissions?: Parameters<typeof platform.setAppPermissions>[1]) =>
                 platform.setAppPermissions(id, permissions);
             const uninstallApp = () => platform.uninstallApp(id);
             const startApp = () => platform.startApp(id);
 
-            let inProgressTrafficCollection: string | undefined;
-            const startTrafficCollection = async (_name: string) => {
-                if (inProgressTrafficCollection)
+            let inProgressTrafficCollectionName: string | undefined;
+            let mitmproxyState: { proc: ExecaChildProcess; flowsOutputPath: string } | undefined;
+            const startTrafficCollection = async (name: string) => {
+                if (inProgressTrafficCollectionName)
                     throw new Error(
-                        `Cannot start new traffic collection. Previous one "${inProgressTrafficCollection}" is still running.`
+                        `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
                     );
 
-                inProgressTrafficCollection = _name ?? new Date().toISOString();
-                // TODO
+                inProgressTrafficCollectionName = name ?? new Date().toISOString();
+
+                const flowsOutputPath = temporaryFile();
+                mitmproxyState = {
+                    proc: execa('mitmdump', ['-w', flowsOutputPath]),
+                    flowsOutputPath,
+                };
+                await timeout(awaitProcessStart(mitmproxyState.proc, 'Proxy server listening'), {
+                    milliseconds: 30000,
+                });
             };
             const stopTrafficCollection = async () => {
-                inProgressTrafficCollection = undefined;
-                // TODO
+                if (mitmproxyState?.flowsOutputPath && inProgressTrafficCollectionName) {
+                    const trafficDump = await readFile(mitmproxyState?.flowsOutputPath, 'utf-8');
+                    res.traffic[inProgressTrafficCollectionName] = trafficDump;
+                }
+
+                inProgressTrafficCollectionName = undefined;
+                killProcess(mitmproxyState?.proc);
             };
 
             const cleanUp = async () => {
-                // TODO: Stop mitmdump, emulator?
+                killProcess(mitmproxyState?.proc);
+
+                // TODO: Stop emulator?
             };
             const stop = async (stopOptions?: { uninstallApp?: boolean }) => {
                 if (stopOptions?.uninstallApp) await uninstallApp();
@@ -85,7 +110,7 @@ export const hotGlue = <Platform extends SupportedPlatform>(options: HotGlueOpti
                 await cleanUp();
                 if (options?.noSigint !== true) process.removeAllListeners('SIGINT');
 
-                // TODO
+                return res;
             };
 
             if (options?.resetApp) {
