@@ -40,7 +40,9 @@
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
         "appstraction": "^0.0.0",
-        "p-timeout": "^6.1.1"
+        "execa": "^7.0.0",
+        "p-timeout": "^6.1.1",
+        "tempy": "^3.0.0"
     },
     "devDependencies": {
         "@baltpeter/eslint-config": "2.1.2",
