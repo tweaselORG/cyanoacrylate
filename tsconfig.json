@@ -1,5 +1,5 @@
 {
-    "extends": "@baltpeter/tsconfig",
+    "extends": "@baltpeter/tsconfig/tsconfig.node.json",
     "include": ["src/**/*"],
     "typedocOptions": {
         "plugin": ["typedoc-plugin-markdown"],
