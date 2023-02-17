@@ -1,18 +1,148 @@
-import type { SupportedPlatform, SupportedRunTarget } from 'appstraction';
+import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { readFile } from 'fs/promises';
 import timeout, { TimeoutError } from 'p-timeout';
 import { temporaryFile } from 'tempy';
+import type { AppPath } from './path';
+import { getAppPathAll, getAppPathMain } from './path';
 import { awaitAndroidEmulator, awaitProcessStart, dnsLookup, killProcess } from './util';
 
-/** A capability supported by hot-glue. */
+/** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
     ? 'ssh' | 'frida'
     : never;
+
+/** Metadata about an app. */
+export type App = {
+    /** The app's ID. */
+    id: string;
+    /** The app's version. */
+    version: string | undefined;
+};
+
+/** Functions that can be used to instrument the device and analyze apps. */
+export type Analysis<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+    /** A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). */
+    platform: PlatformApi<Platform, RunTarget>;
+    /**
+     * Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an
+     * emulator and wait for it to boot if necessary and a name was provided in
+     * `targetOptions.startEmulatorOptions.emulatorName`.
+     *
+     * @param options An object with the following optional options:
+     *
+     *   - `killExisting`: Whether to kill (and then restart) the emulator if it is already running (default: `false`).
+     */
+    ensureDevice: (options?: { killExisting?: boolean }) => Promise<void>;
+    /**
+     * Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is
+     * interfering with the results.
+     */
+    ensureTrackingDomainResolution: () => Promise<void>;
+    /** Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. */
+    resetDevice: () => Promise<void>;
+    /**
+     * Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on
+     * the object when you are done with the app to clean up and retrieve the analysis data.
+     *
+     * @param appPath The path to the app to analyze.
+     * @param options An object with the following optional options:
+     *
+     *   - `resetApp`: Whether to reset (i.e. uninstall and then install) the app before starting the analysis (default:
+     *       `false`). Otherwise, you have to install the app yourself using the `installApp()` function.
+     *   - `noSigint`: By default, this library registers a SIGINT handler to gracefully stop the analysis when the user
+     *       hits Ctrl+C. Set this option to `true` to disable this behavior.
+     *
+     * @returns An object to control the analysis of the specified app.
+     */
+    startAppAnalysis: (
+        appPath: AppPath,
+        options?: { resetApp?: boolean; noSigint?: boolean }
+    ) => Promise<AppAnalysis<Platform, RunTarget>>;
+    /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
+    stop: () => Promise<void>;
+};
+
+/** Functions that can be used to control an app analysis. */
+export type AppAnalysis<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+    /** The app's metadata. */
+    app: App;
+
+    /**
+     * Install the specified app.
+     *
+     * @see {@link PlatformApi}
+     */
+    installApp: () => Promise<void>;
+    /**
+     * Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including
+     * dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which
+     * permissions to grant/deny using the `permissions` argument.
+     *
+     * Requires the `ssh` and `frida` capabilities on iOS.
+     *
+     * @param permissions The permissions to set as an object mapping from permission ID to whether to grant it (`allow`
+     *   to grant the permission, `deny` to deny it, `unset` to remove the permission from the permissions table). If
+     *   not specified, all permissions will be set to `allow`.
+     *
+     *   On iOS, in addition to the actual permission IDs, you can also use `location` to set the location permission.
+     *   Here, the possible values are `ask` (ask every time), `never`, `always`, and `while-using` (while using the
+     *   app).
+     * @see {@link PlatformApi}
+     */
+    setAppPermissions: (
+        permissions?: Parameters<PlatformApi<Platform, RunTarget>['setAppPermissions']>[1]
+    ) => Promise<void>;
+    /**
+     * Uninstall the app.
+     *
+     * @see {@link PlatformApi}
+     */
+    uninstallApp: () => Promise<void>;
+    /**
+     * Start the app.
+     *
+     * @see {@link PlatformApi}
+     */
+    startApp: () => Promise<void>;
+
+    /**
+     * Start collecting the device's traffic. This will start a proxy on the host computer on port `8080`. You need to
+     * configure your device to use this proxy (unless you are using an Android emulator).
+     *
+     * Only one traffic collection can be active at a time.
+     *
+     * @param name An optional name to later identify this traffic collection, defaults to the current date otherwise.
+     *
+     * @todo Automatically configure the device to use the proxy (https://github.com/tweaselORG/hot-glue/issues/2).
+     */
+    startTrafficCollection: (name?: string) => Promise<void>;
+    /** Stop collecting the device's traffic. This will stop the proxy on the host computer. */
+    stopTrafficCollection: () => Promise<void>;
+
+    /**
+     * Stop the app analysis and return the collected data.
+     *
+     * @param options An object with the following optional options:
+     *
+     *   - `uninstallApp`: Whether to uninstall the app after stopping the analysis (default: `false`).
+     *
+     * @returns The collected data.
+     */
+    stop: (options?: { uninstallApp?: boolean }) => Promise<AppAnalysisResult>;
+};
+
+/** The result of an app analysis. */
+export type AppAnalysisResult = {
+    /** The app's metadata. */
+    app: App;
+    /** The collected traffic, accessible by the specified name. */
+    traffic: Record<string, string>;
+};
 
 /** The options for a specific platform/run target combination. */
 // Use `unknown` here to mean "no options", and `never` to mean "not supported".
@@ -24,7 +154,7 @@ export type RunTargetOptions<
     android: {
         /** The options for the Android emulator run target. */
         emulator: {
-            /** Options for the emulator if you want it to be automatically started and stopped by hot-glue. */
+            /** Options for the emulator if you want it to be automatically started and stopped by this library. */
             startEmulatorOptions?: {
                 /** The name of the emulator to start. */
                 emulatorName: string;
@@ -63,13 +193,21 @@ export type RunTargetOptions<
     };
 };
 
-export type HotGlueOptions<
+/** The options for the `startAnalysis()` function. */
+export type AnalysisOptions<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
 > = {
+    /** The platform you want to run on. */
     platform: Platform;
+    /** The target (emulator, physical device) you want to run on. */
     runTarget: RunTarget;
+    /**
+     * The capabilities you want. Depending on what you're trying to do, you may not need or want to root the device,
+     * install Frida, etc. In this case, you can exclude those capabilities. This will influence which functions you can
+     * run.
+     */
     capabilities: Capabilities;
 } & (RunTargetOptions<Capabilities>[Platform][RunTarget] extends object
     ? {
@@ -80,19 +218,20 @@ export type HotGlueOptions<
           /** The options for the selected platform/run target combination. */
           targetOptions?: Record<string, never>;
       });
-export type AppPath = string | { main: string; additional?: string[] };
 
-const getAppPathMain = (appPath: AppPath) => (typeof appPath === 'string' ? appPath : appPath.main);
-const getAppPathAll = (appPath: AppPath) =>
-    typeof appPath === 'string' ? [appPath] : [appPath.main, ...(appPath.additional ?? [])];
-
-export const hotGlue = <
+/**
+ * Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
+ * you want to end the analysis.
+ *
+ * @param options The options for the analysis.
+ *
+ * @returns An object that can be used to instrument the device and analyze apps.
+ */
+export function startAnalysis<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(
-    options: HotGlueOptions<Platform, RunTarget, Capabilities>
-) => {
+>(options: AnalysisOptions<Platform, RunTarget, Capabilities>): Analysis<Platform, RunTarget> {
     const platform = platformApi({
         platform: options.platform,
         runTarget: options.runTarget,
@@ -101,40 +240,38 @@ export const hotGlue = <
         targetOptions: options.targetOptions as any,
     });
 
-    const ensureDevice = async (ensureOptions?: { killExisting?: boolean }) => {
-        if (ensureOptions?.killExisting) await killProcess(emulatorProcess);
-
-        // Start the emulator if necessary and a name was provided.
-        if (!emulatorProcess && options.platform === 'android' && options.runTarget === 'emulator') {
-            const targetOptions = options.targetOptions as
-                | RunTargetOptions<Capabilities>['android']['emulator']
-                | undefined;
-            const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
-            if (emulatorName) {
-                const cmdArgs = ['-avd', emulatorName, '-no-boot-anim', '-writable-system'];
-                if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
-                if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
-                if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
-                if (targetOptions?.startEmulatorOptions?.proxy)
-                    cmdArgs.push('-http-proxy', targetOptions.startEmulatorOptions.proxy);
-                else if (targetOptions?.startEmulatorOptions?.proxy !== '')
-                    cmdArgs.push('-http-proxy', '127.0.0.1:8080');
-
-                // eslint-disable-next-line require-atomic-updates
-                emulatorProcess = execa('emulator', cmdArgs);
-
-                await awaitAndroidEmulator();
-            }
-        }
-
-        return platform.ensureDevice();
-    };
-
     let emulatorProcess: ExecaChildProcess | undefined;
     return {
         platform,
 
-        ensureDevice,
+        ensureDevice: async (ensureOptions) => {
+            if (ensureOptions?.killExisting) await killProcess(emulatorProcess);
+
+            // Start the emulator if necessary and a name was provided.
+            if (!emulatorProcess && options.platform === 'android' && options.runTarget === 'emulator') {
+                const targetOptions = options.targetOptions as
+                    | RunTargetOptions<Capabilities>['android']['emulator']
+                    | undefined;
+                const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
+                if (emulatorName) {
+                    const cmdArgs = ['-avd', emulatorName, '-no-boot-anim', '-writable-system'];
+                    if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
+                    if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
+                    if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
+                    if (targetOptions?.startEmulatorOptions?.proxy)
+                        cmdArgs.push('-http-proxy', targetOptions.startEmulatorOptions.proxy);
+                    else if (targetOptions?.startEmulatorOptions?.proxy !== '')
+                        cmdArgs.push('-http-proxy', '127.0.0.1:8080');
+
+                    // eslint-disable-next-line require-atomic-updates
+                    emulatorProcess = execa('emulator', cmdArgs);
+
+                    await awaitAndroidEmulator();
+                }
+            }
+
+            return platform.ensureDevice();
+        },
         ensureTrackingDomainResolution: async () => {
             const trackerDomains = ['doubleclick.net', 'graph.facebook.com', 'branch.io', 'app-measurement.com'];
             for (const domain of trackerDomains) {
@@ -146,7 +283,7 @@ export const hotGlue = <
             }
         },
 
-        resetDevice: () => {
+        async resetDevice() {
             if (options.platform !== 'android' || options.runTarget !== 'emulator')
                 throw new Error('Resetting devices is only supported for Android emulators.');
 
@@ -161,66 +298,29 @@ export const hotGlue = <
 
                 // Sometimes, the Android emulator gets stuck and doesn't accept any commands anymore. In this case, we
                 // restart it.
-                await timeout(ensureDevice({ killExisting: true }), { milliseconds: 60 * 1000 });
+                await timeout(this.ensureDevice({ killExisting: true }), { milliseconds: 60 * 1000 });
                 await timeout(platform.resetDevice(snapshotName), { milliseconds: 5 * 60 * 1000 });
             });
         },
-        startAppAnalysis: async (appPath: AppPath, options?: { resetApp?: boolean; noSigint?: boolean }) => {
+        startAppAnalysis: async (appPath, options) => {
             const appPathMain = getAppPathMain(appPath);
             const id = await platform.getAppId(appPathMain);
             const version = await platform.getAppVersion(appPathMain);
             if (!id) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
 
-            const res: { app: { id: string; version?: string }; traffic: Record<string, string> } = {
+            const res: AppAnalysisResult = {
                 app: { id, version },
                 traffic: {},
             };
 
             const installApp = () => platform.installApp(getAppPathAll(appPath).join(' '));
-            const setAppPermissions = (permissions?: Parameters<typeof platform.setAppPermissions>[1]) =>
-                platform.setAppPermissions(id, permissions);
             const uninstallApp = () => platform.uninstallApp(id);
-            const startApp = () => platform.startApp(id);
 
             let inProgressTrafficCollectionName: string | undefined;
             let mitmproxyState: { proc: ExecaChildProcess; flowsOutputPath: string } | undefined;
-            const startTrafficCollection = async (name: string) => {
-                if (inProgressTrafficCollectionName)
-                    throw new Error(
-                        `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
-                    );
-
-                inProgressTrafficCollectionName = name ?? new Date().toISOString();
-
-                const flowsOutputPath = temporaryFile();
-                mitmproxyState = {
-                    proc: execa('mitmdump', ['-w', flowsOutputPath]),
-                    flowsOutputPath,
-                };
-                await timeout(awaitProcessStart(mitmproxyState.proc, 'Proxy server listening'), {
-                    milliseconds: 30000,
-                });
-            };
-            const stopTrafficCollection = async () => {
-                if (mitmproxyState?.flowsOutputPath && inProgressTrafficCollectionName) {
-                    const trafficDump = await readFile(mitmproxyState?.flowsOutputPath, 'utf-8');
-                    res.traffic[inProgressTrafficCollectionName] = trafficDump;
-                }
-
-                inProgressTrafficCollectionName = undefined;
-                killProcess(mitmproxyState?.proc);
-            };
 
             const cleanUpAppAnalysis = async () => {
                 killProcess(mitmproxyState?.proc);
-            };
-            const stop = async (stopOptions?: { uninstallApp?: boolean }) => {
-                if (stopOptions?.uninstallApp) await uninstallApp();
-
-                await cleanUpAppAnalysis();
-                if (options?.noSigint !== true) process.removeAllListeners('SIGINT');
-
-                return res;
             };
 
             if (options?.resetApp) {
@@ -240,14 +340,47 @@ export const hotGlue = <
                 app: { id, version },
 
                 installApp,
-                setAppPermissions,
+                setAppPermissions: (permissions) => platform.setAppPermissions(id, permissions),
                 uninstallApp,
-                startApp,
+                startApp: () => platform.startApp(id),
 
-                startTrafficCollection,
-                stopTrafficCollection,
+                startTrafficCollection: async (name) => {
+                    if (inProgressTrafficCollectionName)
+                        throw new Error(
+                            `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
+                        );
 
-                stop,
+                    inProgressTrafficCollectionName = name ?? new Date().toISOString();
+
+                    const flowsOutputPath = temporaryFile();
+                    mitmproxyState = {
+                        proc: execa('mitmdump', ['-w', flowsOutputPath]),
+                        flowsOutputPath,
+                    };
+                    await timeout(awaitProcessStart(mitmproxyState.proc, 'Proxy server listening'), {
+                        milliseconds: 30000,
+                    });
+                },
+                stopTrafficCollection: async () => {
+                    killProcess(mitmproxyState?.proc);
+                    if (mitmproxyState?.flowsOutputPath && inProgressTrafficCollectionName) {
+                        const trafficDump = await readFile(mitmproxyState?.flowsOutputPath, 'utf-8');
+                        res.traffic[inProgressTrafficCollectionName] = trafficDump;
+                    }
+
+                    inProgressTrafficCollectionName = undefined;
+                    // eslint-disable-next-line require-atomic-updates
+                    mitmproxyState = undefined;
+                },
+
+                stop: async (stopOptions) => {
+                    if (stopOptions?.uninstallApp) await uninstallApp();
+
+                    await cleanUpAppAnalysis();
+                    if (options?.noSigint !== true) process.removeAllListeners('SIGINT');
+
+                    return res;
+                },
             };
         },
 
@@ -255,6 +388,18 @@ export const hotGlue = <
             if (options.platform === 'android' && options.runTarget === 'emulator') await killProcess(emulatorProcess);
         },
     };
-};
+}
 
-export { pause } from 'appstraction';
+export {
+    AndroidPermission,
+    androidPermissions,
+    DeviceAttribute,
+    GetDeviceAttributeOptions,
+    IosPermission,
+    iosPermissions,
+    pause,
+    PlatformApi,
+    SupportedPlatform,
+    SupportedRunTarget,
+} from 'appstraction';
+export { AppPath, getAppPathAll, getAppPathMain };
