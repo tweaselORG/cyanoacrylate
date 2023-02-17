@@ -1,5 +1,7 @@
+import { pause } from 'appstraction';
 import dns from 'dns';
 import type { ExecaChildProcess } from 'execa';
+import { execa } from 'execa';
 import timeout from 'p-timeout';
 import { promisify } from 'util';
 
@@ -21,3 +23,21 @@ export const awaitProcessStart = (proc: ExecaChildProcess<string>, startMessage:
             }
         });
     });
+
+// Adapted after: https://proandroiddev.com/automated-android-emulator-setup-and-configuration-23accc11a325 and
+// https://gist.github.com/mrk-han/db70c7ce2dfdc8ac3e8ae4bec823ba51
+export const awaitAndroidEmulator = async () => {
+    const getState = async () =>
+        (await execa('adb', ['shell', 'getprop', 'init.svc.bootanim'], { reject: false })).stdout;
+
+    let animationState = await getState();
+    let tries = 0;
+
+    while (animationState !== 'stopped') {
+        if (tries > 4 * 5 * 60) throw new Error('Failed to start emulator: timeout reached.');
+
+        await pause(250);
+        animationState = await getState();
+        tries++;
+    }
+};
