@@ -1,4 +1,4 @@
-# hot-glue
+# cyanoacrylate
 
 > Toolkit for large-scale automated traffic analysis of mobile apps on Android and iOS.
 
@@ -6,11 +6,11 @@
 
 ## Installation
 
-You can install hot-glue using yarn or npm:
+You can install cyanoacrylate using yarn or npm:
 
 ```sh
-yarn add hot-glue
-# or `npm i hot-glue`
+yarn add cyanoacrylate
+# or `npm i cyanoacrylate`
 ```
 
 ## API reference
