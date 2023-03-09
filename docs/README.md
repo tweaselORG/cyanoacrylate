@@ -62,7 +62,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[hot-glue/src/index.ts:28](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L28)
+[cyanoacrylate/src/index.ts:29](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L29)
 
 ___
 
@@ -82,7 +82,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[hot-glue/src/index.ts:197](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L197)
+[cyanoacrylate/src/index.ts:198](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L198)
 
 ___
 
@@ -94,7 +94,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:12
+appstraction/dist/index.d.ts:25
 
 ___
 
@@ -109,11 +109,11 @@ Metadata about an app.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `id` | `string` | The app's ID. |
-| `version` | `string` \| `undefined` | The app's version. |
+| `version?` | `string` | The app's version. |
 
 #### Defined in
 
-[hot-glue/src/index.ts:20](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L20)
+[cyanoacrylate/src/index.ts:21](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L21)
 
 ___
 
@@ -145,7 +145,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[hot-glue/src/index.ts:71](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L71)
+[cyanoacrylate/src/index.ts:72](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L72)
 
 ___
 
@@ -164,7 +164,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[hot-glue/src/index.ts:140](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L140)
+[cyanoacrylate/src/index.ts:141](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L141)
 
 ___
 
@@ -179,7 +179,7 @@ split APKs on Android).
 
 #### Defined in
 
-[hot-glue/src/path.ts:7](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L7)
+[cyanoacrylate/src/path.ts:7](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/path.ts#L7)
 
 ___
 
@@ -197,7 +197,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-appstraction/dist/index.d.ts:208
+appstraction/dist/index.d.ts:203
 
 ___
 
@@ -216,7 +216,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-appstraction/dist/index.d.ts:210
+appstraction/dist/index.d.ts:205
 
 ___
 
@@ -228,7 +228,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:16
+appstraction/dist/index.d.ts:29
 
 ___
 
@@ -251,8 +251,6 @@ Functions that are available for the platforms.
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
-| `getAppId` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the app/bundle ID of the app at the given path. |
-| `getAppVersion` | (`appPath`: `string`) => `Promise`<`string` \| `undefined`\> | Get the version of the app at the given path. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
@@ -266,7 +264,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:22
+appstraction/dist/index.d.ts:35
 
 ___
 
@@ -303,7 +301,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[hot-glue/src/index.ts:149](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L149)
+[cyanoacrylate/src/index.ts:150](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L150)
 
 ___
 
@@ -321,7 +319,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[hot-glue/src/index.ts:13](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L13)
+[cyanoacrylate/src/index.ts:14](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L14)
 
 ___
 
@@ -333,7 +331,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:18
+appstraction/dist/index.d.ts:31
 
 ___
 
@@ -351,7 +349,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:20
+appstraction/dist/index.d.ts:33
 
 ## Variables
 
@@ -363,7 +361,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:10
+appstraction/dist/index.d.ts:23
 
 ___
 
@@ -375,7 +373,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-appstraction/dist/index.d.ts:14
+appstraction/dist/index.d.ts:27
 
 ## Functions
 
@@ -397,7 +395,7 @@ Utility function to get an array of all files from an [AppPath](README.md#apppat
 
 #### Defined in
 
-[hot-glue/src/path.ts:12](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L12)
+[cyanoacrylate/src/path.ts:12](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/path.ts#L12)
 
 ___
 
@@ -419,7 +417,7 @@ Utility function to get the main file from an [AppPath](README.md#apppath).
 
 #### Defined in
 
-[hot-glue/src/path.ts:10](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L10)
+[cyanoacrylate/src/path.ts:10](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/path.ts#L10)
 
 ___
 
@@ -474,4 +472,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[hot-glue/src/index.ts:230](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L230)
+[cyanoacrylate/src/index.ts:231](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L231)
