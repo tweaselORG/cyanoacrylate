@@ -1,3 +1,6 @@
+# The default folder to put you mitmproxy addons to import
+mitmproxy-addons/
+
 tmp/
 *.tmp
 tmp.*
@@ -323,3 +326,5 @@ $RECYCLE.BIN/
 
 # End of
 # https://www.toptal.com/developers/gitignore/api/linux,macos,windows,visualstudiocode,jetbrains+all,sublimetext,node
+
+mitmproxy-addons/

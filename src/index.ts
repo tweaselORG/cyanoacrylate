@@ -1,13 +1,16 @@
 import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstraction';
-import { platformApi } from 'appstraction';
+import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
+import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import timeout, { TimeoutError } from 'p-timeout';
+import { join } from 'path';
+import process from 'process';
 import { temporaryFile } from 'tempy';
 import type { AppPath } from './path';
 import { getAppPathAll, getAppPathMain } from './path';
-import { awaitAndroidEmulator, awaitProcessStart, dnsLookup, killProcess } from './util';
+import { awaitAndroidEmulator, awaitMitmproxyStatus, awaitProcessClose, dnsLookup, killProcess } from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -21,7 +24,7 @@ export type App = {
     /** The app's ID. */
     id: string;
     /** The app's version. */
-    version: string | undefined;
+    version?: string;
 };
 
 /** Functions that can be used to instrument the device and analyze apps. */
@@ -209,6 +212,12 @@ export type AnalysisOptions<
      * run.
      */
     capabilities: Capabilities;
+    /**
+     * An object with the name of the addon and a path to the script to use with `mitmproxy -s`. It expects `ipcEvents`
+     * and `harDump` to be present and defaults to `./mitmproxy-addons/ipc_events_addon.py` and
+     * `./mitmproxy-addons/har_dump.py` if not set.
+     */
+    mitmproxyAddons?: { ipcEvents: string; harDump: string; [key: string | symbol]: string };
 } & (RunTargetOptions<Capabilities>[Platform][RunTarget] extends object
     ? {
           /** The options for the selected platform/run target combination. */
@@ -239,6 +248,12 @@ export function startAnalysis<
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         targetOptions: options.targetOptions as any,
     });
+
+    const mitmproxyAddons = {
+        ipcEvents: join(process.cwd(), 'mitmproxy-addons/ipc_events_addon.py'),
+        harDump: join(process.cwd(), 'mitmproxy-addons/har_dump.py'),
+        ...options.mitmproxyAddons,
+    };
 
     let emulatorProcess: ExecaChildProcess | undefined;
     return {
@@ -304,20 +319,19 @@ export function startAnalysis<
         },
         startAppAnalysis: async (appPath, options) => {
             const appPathMain = getAppPathMain(appPath);
-            const id = await platform.getAppId(appPathMain);
-            const version = await platform.getAppVersion(appPathMain);
-            if (!id) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
+            const appMeta = await parseAppMeta(appPathMain);
+            if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
 
             const res: AppAnalysisResult = {
-                app: { id, version },
+                app: appMeta,
                 traffic: {},
             };
 
             const installApp = () => platform.installApp(getAppPathAll(appPath).join(' '));
-            const uninstallApp = () => platform.uninstallApp(id);
+            const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
             let inProgressTrafficCollectionName: string | undefined;
-            let mitmproxyState: { proc: ExecaChildProcess; flowsOutputPath: string } | undefined;
+            let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string } | undefined;
 
             const cleanUpAppAnalysis = async () => {
                 killProcess(mitmproxyState?.proc);
@@ -337,12 +351,12 @@ export function startAnalysis<
             }
 
             return {
-                app: { id, version },
+                app: appMeta,
 
                 installApp,
-                setAppPermissions: (permissions) => platform.setAppPermissions(id, permissions),
+                setAppPermissions: (permissions) => platform.setAppPermissions(appMeta.id, permissions),
                 uninstallApp,
-                startApp: () => platform.startApp(id),
+                startApp: () => platform.startApp(appMeta.id),
 
                 startTrafficCollection: async (name) => {
                     if (inProgressTrafficCollectionName)
@@ -352,25 +366,63 @@ export function startAnalysis<
 
                     inProgressTrafficCollectionName = name ?? new Date().toISOString();
 
-                    const flowsOutputPath = temporaryFile();
+                    const harOutputPath = temporaryFile({ extension: 'har' });
+
                     mitmproxyState = {
-                        proc: execa('mitmdump', ['-w', flowsOutputPath]),
-                        flowsOutputPath,
+                        proc: execa(
+                            'mitmdump',
+                            [
+                                ...Object.entries(mitmproxyAddons).map(([addonName, addonPath]) => {
+                                    if (!existsSync(addonPath))
+                                        throw new Error(
+                                            `No "${addonName}" addon for mitmproxy found at "${addonPath}".${
+                                                addonName === 'ipcEvents' || addonName === 'harDump'
+                                                    ? ' The mitmproxy capability requires that this addon is present.'
+                                                    : ''
+                                            }`
+                                        );
+                                    return `-s ${addonPath}`;
+                                }),
+                                `--set hardump=${harOutputPath}`,
+                            ],
+                            {
+                                stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+                                env: { ...process.env, IPC_PIPE_FD: '3' },
+                                shell: true, // We have to set this, because mitmdump doesn’t accept options starting with '--' as options in non-shell mode.
+                            }
+                        ),
+                        harOutputPath,
                     };
-                    await timeout(awaitProcessStart(mitmproxyState.proc, 'Proxy server listening'), {
+
+                    await timeout(awaitMitmproxyStatus(mitmproxyState.proc, 'running'), {
                         milliseconds: 30000,
+                    }).catch((e) => {
+                        if (e.name === 'TimeoutError')
+                            throw new TimeoutError('Starting mitmproxy failed after a timeout.');
+                        throw e;
                     });
                 },
                 stopTrafficCollection: async () => {
-                    killProcess(mitmproxyState?.proc);
-                    if (mitmproxyState?.flowsOutputPath && inProgressTrafficCollectionName) {
-                        const trafficDump = await readFile(mitmproxyState?.flowsOutputPath, 'utf-8');
-                        res.traffic[inProgressTrafficCollectionName] = trafficDump;
-                    }
+                    if (!mitmproxyState?.proc) throw new Error('No traffic collection is running.');
+                    await Promise.all([
+                        awaitProcessClose(mitmproxyState.proc).then(async () => {
+                            if (mitmproxyState?.harOutputPath && inProgressTrafficCollectionName) {
+                                try {
+                                    const trafficDump = await readFile(mitmproxyState?.harOutputPath, 'utf-8');
+                                    res.traffic[inProgressTrafficCollectionName] = JSON.parse(trafficDump);
+                                } catch {
+                                    throw new Error(
+                                        `Reading the flows from the temporary file @ "${mitmproxyState.harOutputPath}" failed.`
+                                    );
+                                }
+                            }
 
-                    inProgressTrafficCollectionName = undefined;
-                    // eslint-disable-next-line require-atomic-updates
-                    mitmproxyState = undefined;
+                            inProgressTrafficCollectionName = undefined;
+                            // eslint-disable-next-line require-atomic-updates
+                            mitmproxyState = undefined;
+                        }),
+                        killProcess(mitmproxyState.proc),
+                    ]);
                 },
 
                 stop: async (stopOptions) => {
@@ -390,14 +442,12 @@ export function startAnalysis<
     };
 }
 
-export {
+export { androidPermissions, iosPermissions, pause } from 'appstraction';
+export type {
     AndroidPermission,
-    androidPermissions,
     DeviceAttribute,
     GetDeviceAttributeOptions,
     IosPermission,
-    iosPermissions,
-    pause,
     PlatformApi,
     SupportedPlatform,
     SupportedRunTarget,
