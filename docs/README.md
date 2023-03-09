@@ -62,7 +62,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:38](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L38)
+[cyanoacrylate/src/index.ts:31](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L31)
 
 ___
 
@@ -82,7 +82,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:207](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L207)
+[cyanoacrylate/src/index.ts:200](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L200)
 
 ___
 
@@ -113,7 +113,7 @@ Metadata about an app.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:30](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L30)
+[cyanoacrylate/src/index.ts:23](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L23)
 
 ___
 
@@ -145,7 +145,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:81](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L81)
+[cyanoacrylate/src/index.ts:74](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L74)
 
 ___
 
@@ -164,7 +164,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:150](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L150)
+[cyanoacrylate/src/index.ts:143](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L143)
 
 ___
 
@@ -301,7 +301,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:159](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L159)
+[cyanoacrylate/src/index.ts:152](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L152)
 
 ___
 
@@ -319,7 +319,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:23](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L23)
+[cyanoacrylate/src/index.ts:16](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L16)
 
 ___
 
@@ -472,4 +472,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:246](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L246)
+[cyanoacrylate/src/index.ts:239](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L239)
