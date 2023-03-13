@@ -383,12 +383,13 @@ export function startAnalysis<
                                         );
                                     return `-s ${addonPath}`;
                                 }),
-                                `--set hardump=${flowsOutputPath}`,
+                                '--set',
+                                `hardump=${flowsOutputPath}`,
+                                '--set',
+                                'ipcPipeFd=3',
                             ],
                             {
                                 stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-                                env: { ...process.env, IPC_PIPE_FD: '3' },
-                                shell: true, // We have to set this, because mitmdump doesn’t accept options starting with '--' as options in non-shell mode.
                             }
                         ),
                         flowsOutputPath,
