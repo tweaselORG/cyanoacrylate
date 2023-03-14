@@ -1,6 +1,6 @@
 {
     "extends": "@baltpeter/tsconfig/tsconfig.node.json",
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "examples/**/*"],
     "typedocOptions": {
         "plugin": ["typedoc-plugin-markdown"],
         "entryPoints": ["src/index.ts"],
