@@ -14,13 +14,11 @@ import { pause, startAnalysis } from '../src/index';
     const analysis = startAnalysis({
         platform: 'android',
         runTarget: 'emulator',
-        capabilities: [],
-
+        capabilities: ['frida', 'certificate-pinning-bypass'],
         targetOptions: {
             snapshotName,
             startEmulatorOptions: {
                 emulatorName,
-                proxy: '127.0.0.1:8080',
             },
         },
     });
@@ -29,12 +27,13 @@ import { pause, startAnalysis } from '../src/index';
 
     // The library was designed to do this for many apps in one go,
     // so you can easily loop through an array of apps.
-    for (const apkFile of readdirSync(apkFolder)) {
+    const apks = readdirSync(apkFolder);
+    for (const apkFile of apks) {
         const appAnalysis = await analysis.startAppAnalysis({
             main: path.join(apkFolder, apkFile),
         });
 
-        await analysis.resetDevice();
+        // await analysis.resetDevice();
         await analysis.ensureTrackingDomainResolution();
 
         await appAnalysis.installApp();

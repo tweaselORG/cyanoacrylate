@@ -38,7 +38,7 @@ hot-glue
 
 ### Analysis
 
-Ƭ **Analysis**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **Analysis**<`Platform`, `RunTarget`, `Capabilities`\>: `Object`
 
 Functions that can be used to instrument the device and analyze apps.
 
@@ -48,21 +48,22 @@ Functions that can be used to instrument the device and analyze apps.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
 
 #### Type declaration
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `ensureDevice` | (`options?`: { `killExisting?`: `boolean`  }) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an emulator and wait for it to boot if necessary and a name was provided in `targetOptions.startEmulatorOptions.emulatorName`. |
+| `ensureDevice` | (`options?`: { `killExisting?`: `boolean`  }) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an emulator and wait for it to boot if necessary and a name was provided in `targetOptions.startEmulatorOptions.emulatorName`. On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is chosen. |
 | `ensureTrackingDomainResolution` | () => `Promise`<`void`\> | Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is interfering with the results. |
-| `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
+| `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
-| `startAppAnalysis` | (`appPath`: [`AppPath`](README.md#apppath), `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
+| `startAppAnalysis` | (`appPath`: [`AppPath`](README.md#apppath), `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:31](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L31)
+[cyanoacrylate/src/index.ts:32](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L32)
 
 ___
 
@@ -82,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:200](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L200)
+[cyanoacrylate/src/index.ts:209](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L209)
 
 ___
 
@@ -113,13 +114,13 @@ Metadata about an app.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:23](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L23)
+[cyanoacrylate/src/index.ts:24](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L24)
 
 ___
 
 ### AppAnalysis
 
-Ƭ **AppAnalysis**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **AppAnalysis**<`Platform`, `RunTarget`, `Capabilities`\>: `Object`
 
 Functions that can be used to control an app analysis.
 
@@ -129,6 +130,7 @@ Functions that can be used to control an app analysis.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
 
 #### Type declaration
 
@@ -136,16 +138,16 @@ Functions that can be used to control an app analysis.
 | :------ | :------ | :------ |
 | `app` | [`App`](README.md#app) | The app's metadata. |
 | `installApp` | () => `Promise`<`void`\> | Install the specified app. **`See`** [PlatformApi](README.md#platformapi) |
-| `setAppPermissions` | (`permissions?`: `Parameters`<[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`\>[``"setAppPermissions"``]\>[``1``]) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. **`See`** [PlatformApi](README.md#platformapi) |
+| `setAppPermissions` | (`permissions?`: `Parameters`<[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>[``"setAppPermissions"``]\>[``1``]) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. **`See`** [PlatformApi](README.md#platformapi) |
 | `startApp` | () => `Promise`<`void`\> | Start the app. **`See`** [PlatformApi](README.md#platformapi) |
-| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the device's traffic. This will start a proxy on the host computer on port `8080`. You need to configure your device to use this proxy (unless you are using an Android emulator). Only one traffic collection can be active at a time. **`Todo`** Automatically configure the device to use the proxy (https://github.com/tweaselORG/hot-glue/issues/2). |
+| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. Only available on Android. Only one traffic collection can be active at a time. |
 | `stop` | (`options?`: { `uninstallApp?`: `boolean`  }) => `Promise`<[`AppAnalysisResult`](README.md#appanalysisresult)\> | Stop the app analysis and return the collected data. |
 | `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
 | `uninstallApp` | () => `Promise`<`void`\> | Uninstall the app. **`See`** [PlatformApi](README.md#platformapi) |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:74](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L74)
+[cyanoacrylate/src/index.ts:82](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L82)
 
 ___
 
@@ -160,11 +162,11 @@ The result of an app analysis.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `app` | [`App`](README.md#app) | The app's metadata. |
-| `traffic` | `Record`<`string`, `string`\> | The collected traffic, accessible by the specified name. |
+| `traffic` | `Record`<`string`, `string`\> | The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR format (https://w3c.github.io/web-performance/specs/HAR/Overview.html). |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:143](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L143)
+[cyanoacrylate/src/index.ts:155](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L155)
 
 ___
 
@@ -197,7 +199,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-appstraction/dist/index.d.ts:203
+appstraction/dist/index.d.ts:293
 
 ___
 
@@ -216,7 +218,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-appstraction/dist/index.d.ts:205
+appstraction/dist/index.d.ts:295
 
 ___
 
@@ -234,7 +236,7 @@ ___
 
 ### PlatformApi
 
-Ƭ **PlatformApi**<`Platform`, `RunTarget`\>: `Object`
+Ƭ **PlatformApi**<`Platform`, `RunTarget`, `Capabilities`, `Capability`\>: `Object`
 
 Functions that are available for the platforms.
 
@@ -244,22 +246,30 @@ Functions that are available for the platforms.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
+| `Capabilities` | extends `SupportedCapability`<``"android"`` \| ``"ios"``\>[] |
+| `Capability` | `Capabilities`[`number`] |
 
 #### Type declaration
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. |
+| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
 | `installApp` | (`appPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Todo`** How to handle split APKs on Android (#4)? |
+| `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
+| `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
+| `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
+| `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
 | `setAppPermissions` | (`appId`: `string`, `permissions?`: `Platform` extends ``"ios"`` ? { [p in IosPermission]?: "unset" \| "allow" \| "deny" } & { `location?`: ``"ask"`` \| ``"never"`` \| ``"always"`` \| ``"while-using"``  } : `Partial`<`Record`<`LiteralUnion`<[`AndroidPermission`](README.md#androidpermission), `string`\>, ``"allow"`` \| ``"deny"``\>\>) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. |
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
+| `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? `WireGuardConfig` : `Proxy` \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: `Proxy` \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
+| `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
 
 #### Defined in
@@ -285,23 +295,22 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean` ; `proxy?`: `string`  }  }  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean` ; `proxy?`: `string`  }  } | The options for the Android emulator run target. |
+| `android.emulator` | { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
 | `android.emulator.snapshotName` | `string` | The name of a snapshot to use when resetting the emulator. |
-| `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean` ; `proxy?`: `string`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
+| `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
 | `android.emulator.startEmulatorOptions.audio?` | `boolean` | Whether to start the emulator with audio (default: `false`). |
 | `android.emulator.startEmulatorOptions.emulatorName` | `string` | The name of the emulator to start. |
 | `android.emulator.startEmulatorOptions.ephemeral?` | `boolean` | Whether to discard all changes when exiting the emulator (default: `true`). |
 | `android.emulator.startEmulatorOptions.headless?` | `boolean` | Whether to start the emulator in headless mode (default: `false`). |
-| `android.emulator.startEmulatorOptions.proxy?` | `string` | The proxy to use for the emulator, in the format `host:port` or `user:password@host:port`. Currently defaults to `127.0.0.1:8080` (use an empty string to set no proxy), though the default will likely change to "no proxy" in the future. |
 | `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
 | `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:152](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L152)
+[cyanoacrylate/src/index.ts:167](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L167)
 
 ___
 
@@ -319,7 +328,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:16](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L16)
+[cyanoacrylate/src/index.ts:17](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L17)
 
 ___
 
@@ -445,7 +454,7 @@ ___
 
 ### startAnalysis
 
-▸ **startAnalysis**<`Platform`, `RunTarget`, `Capabilities`\>(`options`): [`Analysis`](README.md#analysis)<`Platform`, `RunTarget`\>
+▸ **startAnalysis**<`Platform`, `RunTarget`, `Capabilities`\>(`analysisOptions`): [`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>
 
 Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
 you want to end the analysis.
@@ -462,14 +471,14 @@ you want to end the analysis.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `options` | [`AnalysisOptions`](README.md#analysisoptions)<`Platform`, `RunTarget`, `Capabilities`\> | The options for the analysis. |
+| `analysisOptions` | [`AnalysisOptions`](README.md#analysisoptions)<`Platform`, `RunTarget`, `Capabilities`\> | The options for the analysis. |
 
 #### Returns
 
-[`Analysis`](README.md#analysis)<`Platform`, `RunTarget`\>
+[`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>
 
 An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:239](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L239)
+[cyanoacrylate/src/index.ts:248](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L248)

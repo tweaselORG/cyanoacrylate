@@ -13,10 +13,11 @@ type MitmproxyEvent =
            *
            * - `runnning`: mitmproxy just started.
            * - `done`: mitmproxy shut down.
-           * - `tls_failed`: A TLS error occurred.
-           * - `tls_established`: TLS has been successfully established.
-           * - `client_connected`: A client connected to mitmproxy.
-           * - `client_disconnected`: A client disconnected from mitmproxy.
+           * - `tlsFailed`: A TLS error occurred.
+           * - `tlsEstablished`: TLS has been successfully established.
+           * - `clientConnected`: A client connected to mitmproxy.
+           * - `clientDisconnected`: A client disconnected from mitmproxy.
+           * - `proxyChanged`: The proxy server configuration changed.
            */
           status: 'running' | 'done';
       }
@@ -53,7 +54,26 @@ type MitmproxyEvent =
                */
               serverAddress: string;
           };
+      }
+    | {
+          status: 'proxyChanged';
+          /** An array of server specs which contains all the running servers, one for each mode. */
+          servers: MitmproxyServerSpec<'wireguard' | string>[];
       };
+
+/**
+ * The JSON serialization of the python class mitmproxy.proxy.mode_servers.ServerInstance. See
+ * https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
+ */
+type MitmproxyServerSpec<Type extends 'wireguard' | string> = {
+    type: Type;
+    description: string;
+    full_spec: string;
+    is_running: boolean;
+    last_exception: string | null;
+    listen_addrs: Array<[string, number]>;
+    wireguard_conf: Type extends 'wireguard' ? string | null : never;
+};
 
 /** A promise wrapper around `dns.lookup`. */
 export const dnsLookup = promisify(dns.lookup);
@@ -70,15 +90,17 @@ export const killProcess = async (proc?: ExecaChildProcess) => {
 };
 
 /**
- * Wait for a mitmproxy event status via IPC. Resolves a promise if the status is received.
+ * Wait for a mitmproxy event via IPC. Resolves a promise if the condition is true.
  *
  * @param proc A mitmproxy child process start with the IPC events plugin.
- * @param status The status to wait for.
+ * @param condition Condition to check the message against.
+ *
+ * @returns A promise resolving to the receviced message if the condition is true.
  */
-export const awaitMitmproxyStatus = (proc: ExecaChildProcess<string>, status: MitmproxyEvent['status']) =>
-    new Promise<true>((res) => {
+export const awaitMitmproxyEvent = (proc: ExecaChildProcess<string>, condition: (msg: MitmproxyEvent) => boolean) =>
+    new Promise<MitmproxyEvent>((res) => {
         proc.on('message', (msg: MitmproxyEvent) => {
-            if (msg.status === status) res(true);
+            if (condition(msg)) res(msg);
         });
     });
 

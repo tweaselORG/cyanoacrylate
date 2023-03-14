@@ -4,13 +4,14 @@ import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { homedir } from 'os';
 import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import type { AppPath } from './path';
 import { getAppPathAll, getAppPathMain } from './path';
-import { awaitAndroidEmulator, awaitMitmproxyStatus, awaitProcessClose, dnsLookup, killProcess } from './util';
+import { awaitAndroidEmulator, awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -28,13 +29,20 @@ export type App = {
 };
 
 /** Functions that can be used to instrument the device and analyze apps. */
-export type Analysis<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+export type Analysis<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<'android' | 'ios'>[]
+> = {
     /** A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). */
-    platform: PlatformApi<Platform, RunTarget>;
+    platform: PlatformApi<Platform, RunTarget, Capabilities>;
     /**
      * Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an
      * emulator and wait for it to boot if necessary and a name was provided in
      * `targetOptions.startEmulatorOptions.emulatorName`.
+     *
+     * On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is
+     * chosen.
      *
      * @param options An object with the following optional options:
      *
@@ -65,13 +73,17 @@ export type Analysis<Platform extends SupportedPlatform, RunTarget extends Suppo
     startAppAnalysis: (
         appPath: AppPath,
         options?: { resetApp?: boolean; noSigint?: boolean }
-    ) => Promise<AppAnalysis<Platform, RunTarget>>;
+    ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
     stop: () => Promise<void>;
 };
 
 /** Functions that can be used to control an app analysis. */
-export type AppAnalysis<Platform extends SupportedPlatform, RunTarget extends SupportedRunTarget<Platform>> = {
+export type AppAnalysis<
+    Platform extends SupportedPlatform,
+    RunTarget extends SupportedRunTarget<Platform>,
+    Capabilities extends SupportedCapability<'android' | 'ios'>[]
+> = {
     /** The app's metadata. */
     app: App;
 
@@ -98,7 +110,7 @@ export type AppAnalysis<Platform extends SupportedPlatform, RunTarget extends Su
      * @see {@link PlatformApi}
      */
     setAppPermissions: (
-        permissions?: Parameters<PlatformApi<Platform, RunTarget>['setAppPermissions']>[1]
+        permissions?: Parameters<PlatformApi<Platform, RunTarget, Capabilities>['setAppPermissions']>[1]
     ) => Promise<void>;
     /**
      * Uninstall the app.
@@ -114,14 +126,14 @@ export type AppAnalysis<Platform extends SupportedPlatform, RunTarget extends Su
     startApp: () => Promise<void>;
 
     /**
-     * Start collecting the device's traffic. This will start a proxy on the host computer on port `8080`. You need to
-     * configure your device to use this proxy (unless you are using an Android emulator).
+     * Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It
+     * will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate.
+     *
+     * Only available on Android.
      *
      * Only one traffic collection can be active at a time.
      *
      * @param name An optional name to later identify this traffic collection, defaults to the current date otherwise.
-     *
-     * @todo Automatically configure the device to use the proxy (https://github.com/tweaselORG/hot-glue/issues/2).
      */
     startTrafficCollection: (name?: string) => Promise<void>;
     /** Stop collecting the device's traffic. This will stop the proxy on the host computer. */
@@ -143,7 +155,10 @@ export type AppAnalysis<Platform extends SupportedPlatform, RunTarget extends Su
 export type AppAnalysisResult = {
     /** The app's metadata. */
     app: App;
-    /** The collected traffic, accessible by the specified name. */
+    /**
+     * The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR
+     * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
+     */
     traffic: Record<string, string>;
 };
 
@@ -167,12 +182,6 @@ export type RunTargetOptions<
                 audio?: boolean;
                 /** Whether to discard all changes when exiting the emulator (default: `true`). */
                 ephemeral?: boolean;
-                /**
-                 * The proxy to use for the emulator, in the format `host:port` or `user:password@host:port`. Currently
-                 * defaults to `127.0.0.1:8080` (use an empty string to set no proxy), though the default will likely
-                 * change to "no proxy" in the future.
-                 */
-                proxy?: string;
             };
             /** The name of a snapshot to use when resetting the emulator. */
             snapshotName: string;
@@ -232,7 +241,7 @@ export type AnalysisOptions<
  * Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
  * you want to end the analysis.
  *
- * @param options The options for the analysis.
+ * @param analysisOptions The options for the analysis.
  *
  * @returns An object that can be used to instrument the device and analyze apps.
  */
@@ -240,19 +249,34 @@ export function startAnalysis<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(options: AnalysisOptions<Platform, RunTarget, Capabilities>): Analysis<Platform, RunTarget> {
-    const platform = platformApi({
-        platform: options.platform,
-        runTarget: options.runTarget,
-        capabilities: options.capabilities,
+>(analysisOptions: AnalysisOptions<Platform, RunTarget, Capabilities>): Analysis<Platform, RunTarget, Capabilities> {
+    const platformOptions = {
+        platform: analysisOptions.platform,
+        runTarget: analysisOptions.runTarget,
+        capabilities: analysisOptions.capabilities,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        targetOptions: options.targetOptions as any,
-    });
+        targetOptions: analysisOptions.targetOptions as any,
+    };
+
+    const platform = (
+        analysisOptions.platform === 'android'
+            ? platformApi({
+                  ...platformOptions,
+                  platform: 'android',
+                  // The casting is need because TypeScript doesn't understand that capabilities is already as expected
+                  capabilities: [
+                      ...(analysisOptions.capabilities as SupportedCapability<'android'>[]),
+                      'wireguard',
+                      'root',
+                  ],
+              })
+            : platformApi(platformOptions)
+    ) as PlatformApi<Platform, RunTarget, Capabilities>;
 
     const mitmproxyAddons = {
         ipcEvents: join(process.cwd(), 'mitmproxy-addons/ipc_events_addon.py'),
         harDump: join(process.cwd(), 'mitmproxy-addons/har_dump.py'),
-        ...options.mitmproxyAddons,
+        ...analysisOptions.mitmproxyAddons,
     };
 
     let emulatorProcess: ExecaChildProcess | undefined;
@@ -263,20 +287,20 @@ export function startAnalysis<
             if (ensureOptions?.killExisting) await killProcess(emulatorProcess);
 
             // Start the emulator if necessary and a name was provided.
-            if (!emulatorProcess && options.platform === 'android' && options.runTarget === 'emulator') {
-                const targetOptions = options.targetOptions as
+            if (
+                !emulatorProcess &&
+                analysisOptions.platform === 'android' &&
+                analysisOptions.runTarget === 'emulator'
+            ) {
+                const targetOptions = analysisOptions.targetOptions as
                     | RunTargetOptions<Capabilities>['android']['emulator']
                     | undefined;
                 const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
                 if (emulatorName) {
-                    const cmdArgs = ['-avd', emulatorName, '-no-boot-anim', '-writable-system'];
+                    const cmdArgs = ['-avd', emulatorName, '-no-boot-anim'];
                     if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
                     if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
                     if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
-                    if (targetOptions?.startEmulatorOptions?.proxy)
-                        cmdArgs.push('-http-proxy', targetOptions.startEmulatorOptions.proxy);
-                    else if (targetOptions?.startEmulatorOptions?.proxy !== '')
-                        cmdArgs.push('-http-proxy', '127.0.0.1:8080');
 
                     // eslint-disable-next-line require-atomic-updates
                     emulatorProcess = execa('emulator', cmdArgs);
@@ -299,11 +323,12 @@ export function startAnalysis<
         },
 
         async resetDevice() {
-            if (options.platform !== 'android' || options.runTarget !== 'emulator')
+            if (analysisOptions.platform !== 'android' || analysisOptions.runTarget !== 'emulator')
                 throw new Error('Resetting devices is only supported for Android emulators.');
 
-            const snapshotName = (options.targetOptions as RunTargetOptions<Capabilities>['android']['emulator'])
-                ?.snapshotName;
+            const snapshotName = (
+                analysisOptions.targetOptions as RunTargetOptions<Capabilities>['android']['emulator']
+            )?.snapshotName;
             if (!snapshotName) throw new Error('Cannot reset device: No snapshot name specified.');
 
             return timeout(platform.resetDevice(snapshotName), {
@@ -331,10 +356,11 @@ export function startAnalysis<
             const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
             let inProgressTrafficCollectionName: string | undefined;
-            let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string } | undefined;
+            let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
 
             const cleanUpAppAnalysis = async () => {
                 killProcess(mitmproxyState?.proc);
+                platform._internal?.objectionProcesses?.forEach((proc) => killProcess(proc));
             };
 
             if (options?.resetApp) {
@@ -363,6 +389,9 @@ export function startAnalysis<
                         throw new Error(
                             `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
                         );
+                    if (analysisOptions.platform === 'ios') throw new Error('Unimplemented'); // TODO: We don't have wireguard support on iOS, yet.
+
+                    platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
                     inProgressTrafficCollectionName = name ?? new Date().toISOString();
 
@@ -372,6 +401,8 @@ export function startAnalysis<
                         proc: execa(
                             'mitmdump',
                             [
+                                '--mode',
+                                'wireguard',
                                 ...Object.entries(mitmproxyAddons).map(([addonName, addonPath]) => {
                                     if (!existsSync(addonPath))
                                         throw new Error(
@@ -395,9 +426,44 @@ export function startAnalysis<
                         harOutputPath,
                     };
 
-                    await timeout(awaitMitmproxyStatus(mitmproxyState.proc, 'running'), {
-                        milliseconds: 30000,
-                    }).catch((e) => {
+                    await timeout(
+                        Promise.all([
+                            awaitMitmproxyEvent(
+                                mitmproxyState.proc,
+                                (msg) =>
+                                    msg.status === 'proxyChanged' &&
+                                    msg.servers.some((server) => server.type === 'wireguard' && server.is_running)
+                            )
+                                .then((msg) => {
+                                    if (msg.status !== 'proxyChanged') throw new Error('Unreachable.'); // This will never be reached but we use it as a typeguard
+                                    for (const server of msg.servers) {
+                                        if (
+                                            (server.type !== 'wireguard' && !server.wireguard_conf) ||
+                                            mitmproxyState === undefined
+                                        )
+                                            continue;
+                                        mitmproxyState.wireguardConf = server.wireguard_conf;
+                                        return server.wireguard_conf;
+                                    }
+                                    throw new Error('No WireGuard proxy is running.');
+                                })
+                                .then((wireguardConf) => {
+                                    if (wireguardConf)
+                                        (
+                                            platform as unknown as PlatformApi<
+                                                'android',
+                                                RunTarget,
+                                                Array<'wireguard'>,
+                                                'wireguard'
+                                            >
+                                        ).setProxy(wireguardConf);
+                                }),
+                            awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
+                        ]),
+                        {
+                            milliseconds: 30000,
+                        }
+                    ).catch((e) => {
                         if (e.name === 'TimeoutError')
                             throw new TimeoutError('Starting mitmproxy failed after a timeout.');
                         throw e;
@@ -418,9 +484,20 @@ export function startAnalysis<
                                 }
                             }
 
+                            if (mitmproxyState?.wireguardConf)
+                                await (
+                                    platform as unknown as PlatformApi<
+                                        'android',
+                                        RunTarget,
+                                        Array<'wireguard'>,
+                                        'wireguard'
+                                    >
+                                ).setProxy(null);
+
+                            /* eslint-disable require-atomic-updates */
                             inProgressTrafficCollectionName = undefined;
-                            // eslint-disable-next-line require-atomic-updates
                             mitmproxyState = undefined;
+                            /* eslint-enable require-atomic-updates */
                         }),
                         killProcess(mitmproxyState.proc),
                     ]);
@@ -438,7 +515,8 @@ export function startAnalysis<
         },
 
         stop: async () => {
-            if (options.platform === 'android' && options.runTarget === 'emulator') await killProcess(emulatorProcess);
+            if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator')
+                await killProcess(emulatorProcess);
         },
     };
 }
