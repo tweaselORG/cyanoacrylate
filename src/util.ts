@@ -54,8 +54,13 @@ type MitmproxyEvent =
           };
       };
 
+/** A promise wrapper around `dns.loopup`. */
 export const dnsLookup = promisify(dns.lookup);
 
+/**
+ * The function tries to kill a child process gracefully by sending a SIGINT and if the process didn’t exit, it sends a
+ * SIGKILL to force kill it.
+ */
 export const killProcess = async (proc?: ExecaChildProcess) => {
     if (proc) {
         proc.kill();

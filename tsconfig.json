@@ -10,5 +10,8 @@
         "includeVersion": false,
         "githubPages": false,
         "gitRevision": "main"
+    },
+    "compilerOptions": {
+        "types": ["node"]
     }
 }
