@@ -1,5 +1,5 @@
 {
-    "name": "hot-glue",
+    "name": "cyanoacrylate",
     "version": "0.0.0",
     "description": "Toolkit for large-scale automated traffic analysis of mobile apps on Android and iOS.",
     "bugs": "https://github.com/tweaselORG/hot-glue/issues",
@@ -25,11 +25,15 @@
     "source": "src/index.ts",
     "types": "dist/index.d.ts",
     "files": [
-        "/dist"
+        "/dist",
+        "/mitmproxy-addons/ipcEventsAddon.py",
+        "requirements.txt",
+        "/scripts"
     ],
     "scripts": {
         "build": "parcel build",
         "fix": "yarn eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx --fix",
+        "postinstall": "node scripts/postinstall.js",
         "lint": "tsc && eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx && git diff --check",
         "prepack": "rm -rf dist && yarn build && yarn typedoc",
         "test": "echo 'TODO: No tests specified yet.'",
@@ -51,6 +55,7 @@
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
         "appstraction": "^0.0.0",
+        "cross-fetch": "^3.1.5",
         "execa": "^7.0.0",
         "p-timeout": "^6.1.1",
         "tempy": "^3.0.0"
@@ -61,7 +66,7 @@
         "@baltpeter/tsconfig": "2.0.0",
         "@parcel/packager-ts": "2.8.3",
         "@parcel/transformer-typescript-types": "2.8.3",
-        "@types/node": "^18.15.3",
+        "@types/node": "^18.15.10",
         "@typescript-eslint/eslint-plugin": "5.51.0",
         "eslint": "8.34.0",
         "eslint-plugin-eslint-comments": "3.2.0",

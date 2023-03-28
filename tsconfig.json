@@ -10,5 +10,8 @@
         "includeVersion": false,
         "githubPages": false,
         "gitRevision": "main"
+    },
+    "compilerOptions": {
+        "module": "es2022"
     }
 }
