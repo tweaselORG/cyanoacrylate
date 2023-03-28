@@ -2,13 +2,13 @@ import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstra
 import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
-import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import timeout, { TimeoutError } from 'p-timeout';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
+import { fileURLToPath } from 'url';
 import type { AppPath } from './path';
 import { getAppPathAll, getAppPathMain } from './path';
 import { awaitAndroidEmulator, awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
@@ -221,12 +221,6 @@ export type AnalysisOptions<
      * run.
      */
     capabilities: Capabilities;
-    /**
-     * An object with the name of the addon and a path to the script to use with `mitmproxy -s`. It expects `ipcEvents`
-     * and `harDump` to be present and defaults to `./mitmproxy-addons/ipc_events_addon.py` and
-     * `./mitmproxy-addons/har_dump.py` if not set.
-     */
-    mitmproxyAddons?: { ipcEvents: string; harDump: string; [key: string | symbol]: string };
 } & (RunTargetOptions<Capabilities>[Platform][RunTarget] extends object
     ? {
           /** The options for the selected platform/run target combination. */
@@ -258,6 +252,10 @@ export function startAnalysis<
         targetOptions: analysisOptions.targetOptions as any,
     };
 
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const venvPath = join(__dirname, '../.venv/bin');
+    process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
+
     const platform = (
         analysisOptions.platform === 'android'
             ? platformApi({
@@ -272,12 +270,6 @@ export function startAnalysis<
               })
             : platformApi(platformOptions)
     ) as PlatformApi<Platform, RunTarget, Capabilities>;
-
-    const mitmproxyAddons = {
-        ipcEvents: join(process.cwd(), 'mitmproxy-addons/ipc_events_addon.py'),
-        harDump: join(process.cwd(), 'mitmproxy-addons/har_dump.py'),
-        ...analysisOptions.mitmproxyAddons,
-    };
 
     let emulatorProcess: ExecaChildProcess | undefined;
     return {
@@ -406,17 +398,10 @@ export function startAnalysis<
                             [
                                 '--mode',
                                 'wireguard',
-                                ...Object.entries(mitmproxyAddons).map(([addonName, addonPath]) => {
-                                    if (!existsSync(addonPath))
-                                        throw new Error(
-                                            `No "${addonName}" addon for mitmproxy found at "${addonPath}".${
-                                                addonName === 'ipcEvents' || addonName === 'harDump'
-                                                    ? ' The mitmproxy capability requires that this addon is present.'
-                                                    : ''
-                                            }`
-                                        );
-                                    return `-s ${addonPath}`;
-                                }),
+                                '-s',
+                                join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
+                                '-s',
+                                join(__dirname, '../mitmproxy-addons/har_dump.py'),
                                 '--set',
                                 `hardump=${harOutputPath}`,
                                 '--set',
