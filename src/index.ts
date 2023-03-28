@@ -263,7 +263,7 @@ export function startAnalysis<
             ? platformApi({
                   ...platformOptions,
                   platform: 'android',
-                  // The casting is need because TypeScript doesn't understand that capabilities is already as expected
+                  // The casting is needed because TypeScript doesn't understand that capabilities is already as expected.
                   capabilities: [
                       ...(analysisOptions.capabilities as SupportedCapability<'android'>[]),
                       'wireguard',
@@ -389,11 +389,14 @@ export function startAnalysis<
                         throw new Error(
                             `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
                         );
-                    if (analysisOptions.platform === 'ios') throw new Error('Unimplemented'); // TODO: We don't have wireguard support on iOS, yet.
-
-                    platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
+                    if (analysisOptions.platform === 'ios')
+                        throw new Error(
+                            'Unimplemented: Missing WireGuard support on iOS in appstraction prevents traffic collection.'
+                        ); // TODO: We don't have wireguard support on iOS, yet. (see https://github.com/tweaselORG/cyanoacrylate/issues/10)
 
                     inProgressTrafficCollectionName = name ?? new Date().toISOString();
+
+                    platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
                     const harOutputPath = temporaryFile({ extension: 'har' });
 
@@ -445,7 +448,7 @@ export function startAnalysis<
                                         mitmproxyState.wireguardConf = server.wireguard_conf;
                                         return server.wireguard_conf;
                                     }
-                                    throw new Error('No WireGuard proxy is running.');
+                                    throw new Error('Failed to start mitmproxy: No WireGuard proxy is running.');
                                 })
                                 .then((wireguardConf) => {
                                     if (wireguardConf)
