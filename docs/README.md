@@ -1,6 +1,6 @@
-hot-glue
+cyanoacrylate
 
-# hot-glue
+# cyanoacrylate
 
 ## Table of contents
 
@@ -69,7 +69,7 @@ ___
 
 ### AnalysisOptions
 
-Ƭ **AnalysisOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `mitmproxyAddons?`: { `[key: string | symbol]`: `string`; `harDump`: `string` ; `ipcEvents`: `string`  } ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
+Ƭ **AnalysisOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
 
 The options for the `startAnalysis()` function.
 
@@ -481,4 +481,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:248](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L248)
+[cyanoacrylate/src/index.ts:242](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L242)
