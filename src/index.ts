@@ -11,7 +11,7 @@ import { temporaryFile } from 'tempy';
 import { fileURLToPath } from 'url';
 import type { AppPath } from './path';
 import { getAppPathAll, getAppPathMain } from './path';
-import { awaitAndroidEmulator, awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
+import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -296,8 +296,6 @@ export function startAnalysis<
 
                     // eslint-disable-next-line require-atomic-updates
                     emulatorProcess = execa('emulator', cmdArgs);
-
-                    await awaitAndroidEmulator();
                 }
             }
 
