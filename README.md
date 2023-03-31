@@ -55,10 +55,7 @@ The following example collects the traffic for an app in the Android emulator. I
         },
     });
 
-    const app = {
-        main: '<path to main APK>',
-        additional: ['<path to split APK>']
-    };
+    const app = ['<path to main APK>', '<path to split APK>'];
 
     // Start the emulator and ensure that everything is set up correctly.
     await analysis.ensureDevice();
