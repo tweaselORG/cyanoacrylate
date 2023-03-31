@@ -9,8 +9,6 @@ import { dirname, join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { fileURLToPath } from 'url';
-import type { AppPath } from './path';
-import { getAppPathAll, getAppPathMain } from './path';
 import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
 
 /** A capability supported by this library. */
@@ -71,7 +69,7 @@ export type Analysis<
      * @returns An object to control the analysis of the specified app.
      */
     startAppAnalysis: (
-        appPath: AppPath,
+        appPath: Platform extends 'android' ? string | string[] : string,
         options?: { resetApp?: boolean; noSigint?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
@@ -333,7 +331,11 @@ export function startAnalysis<
             });
         },
         startAppAnalysis: async (appPath, options) => {
-            const appPathMain = getAppPathMain(appPath);
+            if (typeof appPath !== 'string' && analysisOptions.platform !== 'android')
+                throw Error('Could not install app: Split app files are only supported on Android.');
+
+            // This might not be the main APK, but we don‘t care because we should get the same meta information out of all the APKs
+            const appPathMain = typeof appPath === 'string' ? appPath : appPath[0] ?? '';
             const appMeta = await parseAppMeta(appPathMain);
             if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
 
@@ -342,7 +344,7 @@ export function startAnalysis<
                 traffic: {},
             };
 
-            const installApp = () => platform.installApp(getAppPathAll(appPath).join(' '));
+            const installApp = () => platform.installApp(appPath);
             const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
             let inProgressTrafficCollectionName: string | undefined;
@@ -517,4 +519,3 @@ export type {
     SupportedPlatform,
     SupportedRunTarget,
 } from 'appstraction';
-export { AppPath, getAppPathAll, getAppPathMain };

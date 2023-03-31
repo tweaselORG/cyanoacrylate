@@ -54,7 +54,7 @@
     },
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
-        "appstraction": "^0.0.0",
+        "appstraction": "^0.1.2",
         "cross-fetch": "^3.1.5",
         "execa": "^7.0.0",
         "p-timeout": "^6.1.1",
