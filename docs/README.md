@@ -12,7 +12,6 @@ cyanoacrylate
 - [App](README.md#app)
 - [AppAnalysis](README.md#appanalysis)
 - [AppAnalysisResult](README.md#appanalysisresult)
-- [AppPath](README.md#apppath)
 - [DeviceAttribute](README.md#deviceattribute)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
 - [IosPermission](README.md#iospermission)
@@ -29,8 +28,6 @@ cyanoacrylate
 
 ### Functions
 
-- [getAppPathAll](README.md#getapppathall)
-- [getAppPathMain](README.md#getapppathmain)
 - [pause](README.md#pause)
 - [startAnalysis](README.md#startanalysis)
 
@@ -58,12 +55,12 @@ Functions that can be used to instrument the device and analyze apps.
 | `ensureTrackingDomainResolution` | () => `Promise`<`void`\> | Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is interfering with the results. |
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
-| `startAppAnalysis` | (`appPath`: [`AppPath`](README.md#apppath), `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
+| `startAppAnalysis` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:32](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L32)
+[cyanoacrylate/src/index.ts:30](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L30)
 
 ___
 
@@ -83,7 +80,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:209](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L209)
+[cyanoacrylate/src/index.ts:207](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L207)
 
 ___
 
@@ -114,7 +111,7 @@ Metadata about an app.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:24](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L24)
+[cyanoacrylate/src/index.ts:22](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L22)
 
 ___
 
@@ -147,7 +144,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:82](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L82)
+[cyanoacrylate/src/index.ts:80](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L80)
 
 ___
 
@@ -166,22 +163,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:155](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L155)
-
-___
-
-### AppPath
-
-Ƭ **AppPath**: `string` \| { `additional?`: `string`[] ; `main`: `string`  }
-
-The path to the installation files for an app.
-
-Can either be a string if the app is a single file, or an object specifying a main file and additional files (for
-split APKs on Android).
-
-#### Defined in
-
-[cyanoacrylate/src/path.ts:7](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L7)
+[cyanoacrylate/src/index.ts:153](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L153)
 
 ___
 
@@ -259,7 +241,7 @@ Functions that are available for the platforms.
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
-| `installApp` | `Platform` extends ``"android"`` ? (`apkPath`: `string` \| `string`[]) => `Promise`<`void`\> : (`ipaPath`: `string`) => `Promise`<`void`\> | Install the app at the given path. **`Param`** Path to the app file (`.ipa` on iOS, `.apk` on Android) to install. On Android, this can also be an array of the paths of the split APKs of a single app. |
+| `installApp` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`) => `Promise`<`void`\> | Install the app at the given path. |
 | `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
 | `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
@@ -310,7 +292,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:167](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L167)
+[cyanoacrylate/src/index.ts:165](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L165)
 
 ___
 
@@ -328,7 +310,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:17](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L17)
+[cyanoacrylate/src/index.ts:15](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L15)
 
 ___
 
@@ -386,50 +368,6 @@ appstraction/dist/index.d.ts:37
 
 ## Functions
 
-### getAppPathAll
-
-▸ **getAppPathAll**(`appPath`): `string`[]
-
-Utility function to get an array of all files from an [AppPath](README.md#apppath).
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `appPath` | [`AppPath`](README.md#apppath) |
-
-#### Returns
-
-`string`[]
-
-#### Defined in
-
-[cyanoacrylate/src/path.ts:12](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L12)
-
-___
-
-### getAppPathMain
-
-▸ **getAppPathMain**(`appPath`): `string`
-
-Utility function to get the main file from an [AppPath](README.md#apppath).
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `appPath` | [`AppPath`](README.md#apppath) |
-
-#### Returns
-
-`string`
-
-#### Defined in
-
-[cyanoacrylate/src/path.ts:10](https://github.com/tweaselORG/hot-glue/blob/main/src/path.ts#L10)
-
-___
-
 ### pause
 
 ▸ **pause**(`durationInMs`): `Promise`<`unknown`\>
@@ -481,4 +419,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:242](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L242)
+[cyanoacrylate/src/index.ts:240](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L240)
