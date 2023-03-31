@@ -29,9 +29,7 @@ import { pause, startAnalysis } from '../src/index';
     // so you can easily loop through an array of apps.
     const apks = await readdir(apkFolder);
     for (const apkFile of apks) {
-        const appAnalysis = await analysis.startAppAnalysis({
-            main: path.join(apkFolder, apkFile),
-        });
+        const appAnalysis = await analysis.startAppAnalysis(path.join(apkFolder, apkFile));
 
         await analysis.resetDevice();
         await analysis.ensureTrackingDomainResolution();
