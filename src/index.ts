@@ -1,5 +1,6 @@
 import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
+import { getDirname } from 'cross-dirname';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { readFile } from 'fs/promises';
@@ -7,11 +8,12 @@ import type { Har } from 'har-format';
 import { parse as parseIni, stringify as stringifyIni } from 'js-ini';
 import { homedir } from 'os';
 import timeout, { TimeoutError } from 'p-timeout';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
-import { fileURLToPath } from 'url';
 import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
+
+const __dirname = getDirname();
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -284,7 +286,6 @@ export function startAnalysis<
         targetOptions: analysisOptions.targetOptions as any,
     };
 
-    const __dirname = dirname(fileURLToPath(import.meta.url));
     const venvPath = join(__dirname, '../.venv/bin');
     process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
 

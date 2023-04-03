@@ -63,7 +63,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:40](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L40)
+[cyanoacrylate/src/index.ts:42](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L42)
 
 ___
 
@@ -83,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:241](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L241)
+[cyanoacrylate/src/index.ts:243](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L243)
 
 ___
 
@@ -114,7 +114,7 @@ Metadata about an app.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:24](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L24)
+[cyanoacrylate/src/index.ts:26](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L26)
 
 ___
 
@@ -147,7 +147,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:108](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L108)
+[cyanoacrylate/src/index.ts:110](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L110)
 
 ___
 
@@ -166,7 +166,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:187](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L187)
+[cyanoacrylate/src/index.ts:189](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L189)
 
 ___
 
@@ -295,7 +295,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:199](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L199)
+[cyanoacrylate/src/index.ts:201](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L201)
 
 ___
 
@@ -313,7 +313,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:17](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L17)
+[cyanoacrylate/src/index.ts:19](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L19)
 
 ___
 
@@ -359,7 +359,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:38](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L38)
+[cyanoacrylate/src/index.ts:40](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L40)
 
 ## Variables
 
@@ -438,4 +438,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:274](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L274)
+[cyanoacrylate/src/index.ts:276](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L276)
