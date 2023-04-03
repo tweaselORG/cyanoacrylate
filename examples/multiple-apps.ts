@@ -40,7 +40,7 @@ import { pause, startAnalysis } from '../src/index';
         await appAnalysis.startApp();
 
         // Pause to wait for the app to generate network traffic.
-        await pause(60_000);
+        await pause(6_000);
 
         await appAnalysis.stopTrafficCollection();
 

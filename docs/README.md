@@ -20,6 +20,7 @@ cyanoacrylate
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
+- [TrafficCollectionOptions](README.md#trafficcollectionoptions)
 
 ### Variables
 
@@ -56,11 +57,13 @@ Functions that can be used to instrument the device and analyze apps.
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
 | `startAppAnalysis` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
+| `startTrafficCollection` | (`options?`: [`TrafficCollectionOptions`](README.md#trafficcollectionoptions)) => `Promise`<`void`\> | Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. Only available on Android. Only one traffic collection can be active at a time. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
+| `stopTrafficCollection` | () => `Promise`<`Har`\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:30](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L30)
+[cyanoacrylate/src/index.ts:40](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L40)
 
 ___
 
@@ -80,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:207](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L207)
+[cyanoacrylate/src/index.ts:241](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L241)
 
 ___
 
@@ -111,7 +114,7 @@ Metadata about an app.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:22](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L22)
+[cyanoacrylate/src/index.ts:24](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L24)
 
 ___
 
@@ -137,14 +140,14 @@ Functions that can be used to control an app analysis.
 | `installApp` | () => `Promise`<`void`\> | Install the specified app. **`See`** [PlatformApi](README.md#platformapi) |
 | `setAppPermissions` | (`permissions?`: `Parameters`<[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>[``"setAppPermissions"``]\>[``1``]) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. **`See`** [PlatformApi](README.md#platformapi) |
 | `startApp` | () => `Promise`<`void`\> | Start the app. **`See`** [PlatformApi](README.md#platformapi) |
-| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. Only available on Android. Only one traffic collection can be active at a time. |
+| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the traffic of only this app. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. Only available on Android. Only one traffic collection can be active at a time. |
 | `stop` | (`options?`: { `uninstallApp?`: `boolean`  }) => `Promise`<[`AppAnalysisResult`](README.md#appanalysisresult)\> | Stop the app analysis and return the collected data. |
-| `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
+| `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the app's traffic. This will stop the proxy on the host computer. The collected traffic is available from the `traffic` property of the object returned by `stop()`. |
 | `uninstallApp` | () => `Promise`<`void`\> | Uninstall the app. **`See`** [PlatformApi](README.md#platformapi) |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:80](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L80)
+[cyanoacrylate/src/index.ts:108](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L108)
 
 ___
 
@@ -159,11 +162,11 @@ The result of an app analysis.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `app` | [`App`](README.md#app) | The app's metadata. |
-| `traffic` | `Record`<`string`, `string`\> | The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR format (https://w3c.github.io/web-performance/specs/HAR/Overview.html). |
+| `traffic` | `Record`<`string`, `Har`\> | The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR format (https://w3c.github.io/web-performance/specs/HAR/Overview.html). |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:153](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L153)
+[cyanoacrylate/src/index.ts:187](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L187)
 
 ___
 
@@ -292,7 +295,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:165](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L165)
+[cyanoacrylate/src/index.ts:199](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L199)
 
 ___
 
@@ -310,7 +313,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:15](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L15)
+[cyanoacrylate/src/index.ts:17](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L17)
 
 ___
 
@@ -341,6 +344,22 @@ A run target that is supported by this library for the given platform.
 #### Defined in
 
 appstraction/dist/index.d.ts:43
+
+___
+
+### TrafficCollectionOptions
+
+Ƭ **TrafficCollectionOptions**: { `mode`: ``"all-apps"``  } \| { `apps`: `string`[] ; `mode`: ``"allowlist"`` \| ``"denylist"``  }
+
+Options for a traffic collection that specifies which apps to collect traffic from.
+
+- `mode: 'all-apps'`: Collect traffic from all apps.
+- `mode: 'allowlist'`: Collect traffic only from the apps with the app IDs in the `apps` array.
+- `mode: 'denylist'`: Collect traffic from all apps except the apps with the app IDs in the `apps` array.
+
+#### Defined in
+
+[cyanoacrylate/src/index.ts:38](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L38)
 
 ## Variables
 
@@ -419,4 +438,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:240](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L240)
+[cyanoacrylate/src/index.ts:274](https://github.com/tweaselORG/hot-glue/blob/main/src/index.ts#L274)

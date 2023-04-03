@@ -2953,6 +2953,11 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
+js-ini@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/js-ini/-/js-ini-1.6.0.tgz#8441d87c5422e1bedaf66ffc522a53cb2d25db69"
+  integrity sha512-9Vx+NVkMRNY4i7pLLIGdXIQbP1iwB3fP2IG1zMCgeUUvR1ODmTKa33eR/J9FHoorNsfoJr9/2SVqeSKLwPD9Nw==
+
 js-sdsl@^4.1.4:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/js-sdsl/-/js-sdsl-4.3.0.tgz#aeefe32a451f7af88425b11fdb5f58c90ae1d711"
