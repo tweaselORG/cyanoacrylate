@@ -2,10 +2,10 @@
     "name": "cyanoacrylate",
     "version": "0.1.0",
     "description": "Toolkit for large-scale automated traffic analysis of mobile apps on Android and iOS.",
-    "bugs": "https://github.com/tweaselORG/hot-glue/issues",
+    "bugs": "https://github.com/tweaselORG/cyanoacrylate/issues",
     "repository": {
         "type": "git",
-        "url": "https://github.com/tweaselORG/hot-glue.git"
+        "url": "https://github.com/tweaselORG/cyanoacrylate.git"
     },
     "license": "MIT",
     "contributors": [
