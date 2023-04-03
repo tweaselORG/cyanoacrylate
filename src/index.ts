@@ -4,6 +4,8 @@ import { getDirname } from 'cross-dirname';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { readFile } from 'fs/promises';
+import type { Har } from 'har-format';
+import { parse as parseIni, stringify as stringifyIni } from 'js-ini';
 import { homedir } from 'os';
 import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
@@ -28,6 +30,14 @@ export type App = {
     version?: string;
 };
 
+/**
+ * Options for a traffic collection that specifies which apps to collect traffic from.
+ *
+ * - `mode: 'all-apps'`: Collect traffic from all apps.
+ * - `mode: 'allowlist'`: Collect traffic only from the apps with the app IDs in the `apps` array.
+ * - `mode: 'denylist'`: Collect traffic from all apps except the apps with the app IDs in the `apps` array.
+ */
+export type TrafficCollectionOptions = { mode: 'all-apps' } | { mode: 'allowlist' | 'denylist'; apps: string[] };
 /** Functions that can be used to instrument the device and analyze apps. */
 export type Analysis<
     Platform extends SupportedPlatform,
@@ -74,6 +84,24 @@ export type Analysis<
         appPath: Platform extends 'android' ? string | string[] : string,
         options?: { resetApp?: boolean; noSigint?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
+    /**
+     * Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It
+     * will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You
+     * can configure which apps to include using the `options` parameter.
+     *
+     * Only available on Android.
+     *
+     * Only one traffic collection can be active at a time.
+     *
+     * @param options Set which apps to include in the traffic collection. If not specified, all apps will be included.
+     */
+    startTrafficCollection: (options?: TrafficCollectionOptions) => Promise<void>;
+    /**
+     * Stop collecting the device's traffic. This will stop the proxy on the host computer.
+     *
+     * @returns The collected traffic in HAR format.
+     */
+    stopTrafficCollection: () => Promise<Har>;
     /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
     stop: () => Promise<void>;
 };
@@ -126,8 +154,10 @@ export type AppAnalysis<
     startApp: () => Promise<void>;
 
     /**
-     * Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It
-     * will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate.
+     * Start collecting the traffic of only this app.
+     *
+     * This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the
+     * target to use the WireGuard proxy and trust the mitmproxy TLS certificate.
      *
      * Only available on Android.
      *
@@ -136,7 +166,11 @@ export type AppAnalysis<
      * @param name An optional name to later identify this traffic collection, defaults to the current date otherwise.
      */
     startTrafficCollection: (name?: string) => Promise<void>;
-    /** Stop collecting the device's traffic. This will stop the proxy on the host computer. */
+    /**
+     * Stop collecting the app's traffic. This will stop the proxy on the host computer.
+     *
+     * The collected traffic is available from the `traffic` property of the object returned by `stop()`.
+     */
     stopTrafficCollection: () => Promise<void>;
 
     /**
@@ -159,7 +193,7 @@ export type AppAnalysisResult = {
      * The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR
      * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
      */
-    traffic: Record<string, string>;
+    traffic: Record<string, Har>;
 };
 
 /** The options for a specific platform/run target combination. */
@@ -271,6 +305,132 @@ export function startAnalysis<
     ) as PlatformApi<Platform, RunTarget, Capabilities>;
 
     let emulatorProcess: ExecaChildProcess | undefined;
+    let trafficCollectionInProgress = false;
+    let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
+
+    const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
+        if (trafficCollectionInProgress)
+            throw new Error('Cannot start new traffic collection. A previous one is still running.');
+        if (analysisOptions.platform === 'ios')
+            throw new Error(
+                'Unimplemented: Missing WireGuard support on iOS in appstraction prevents traffic collection (see https://github.com/tweaselORG/cyanoacrylate/issues/10).'
+            );
+
+        trafficCollectionInProgress = true;
+
+        platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
+
+        const harOutputPath = temporaryFile({ extension: 'har' });
+
+        mitmproxyState = {
+            proc: execa(
+                'mitmdump',
+                [
+                    '--mode',
+                    'wireguard',
+                    '-s',
+                    join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
+                    '-s',
+                    join(__dirname, '../mitmproxy-addons/har_dump.py'),
+                    '--set',
+                    `hardump=${harOutputPath}`,
+                    '--set',
+                    'ipcPipeFd=3',
+                ],
+                {
+                    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+                }
+            ),
+            harOutputPath,
+        };
+
+        await timeout(
+            Promise.all([
+                awaitMitmproxyEvent(
+                    mitmproxyState.proc,
+                    (msg) =>
+                        msg.status === 'proxyChanged' &&
+                        msg.servers.some((server) => server.type === 'wireguard' && server.is_running)
+                )
+                    .then((msg) => {
+                        if (msg.status !== 'proxyChanged') throw new Error('Unreachable.'); // This will never be reached but we use it as a typeguard
+                        for (const server of msg.servers) {
+                            if ((server.type !== 'wireguard' && !server.wireguard_conf) || mitmproxyState === undefined)
+                                continue;
+                            mitmproxyState.wireguardConf = server.wireguard_conf;
+                            return server.wireguard_conf;
+                        }
+                        throw new Error('Failed to start mitmproxy: No WireGuard proxy is running.');
+                    })
+                    .then((mitmproxyWireguardConf) => {
+                        if (mitmproxyWireguardConf) {
+                            const parsedWireguardConf = parseIni(mitmproxyWireguardConf, { autoTyping: false });
+
+                            if (options?.mode === 'allowlist')
+                                (parsedWireguardConf['Interface'] as { IncludedApplications: string })[
+                                    'IncludedApplications'
+                                ] = options.apps.join(', ');
+                            else if (options?.mode === 'denylist')
+                                (parsedWireguardConf['Interface'] as { ExcludedApplications: string })[
+                                    'ExcludedApplications'
+                                ] = options.apps.join(', ');
+
+                            (
+                                platform as unknown as PlatformApi<
+                                    'android',
+                                    RunTarget,
+                                    Array<'wireguard'>,
+                                    'wireguard'
+                                >
+                            ).setProxy(stringifyIni(parsedWireguardConf));
+                        }
+                    }),
+                awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
+            ]),
+            {
+                milliseconds: 30000,
+            }
+        ).catch((e) => {
+            if (e.name === 'TimeoutError') throw new TimeoutError('Starting mitmproxy failed after a timeout.');
+            throw e;
+        });
+    };
+    const stopTrafficCollection = async () => {
+        if (!mitmproxyState?.proc) throw new Error('No traffic collection is running.');
+
+        const [har] = await Promise.all([
+            awaitProcessClose(mitmproxyState.proc).then(async () => {
+                let _har: Har | undefined;
+
+                if (!mitmproxyState) throw new Error('This should never happen.');
+
+                try {
+                    const trafficDump = await readFile(mitmproxyState.harOutputPath, 'utf-8');
+                    _har = JSON.parse(trafficDump) as Har;
+                } catch {
+                    throw new Error(
+                        `Reading the flows from the temporary file "${mitmproxyState.harOutputPath}" failed.`
+                    );
+                }
+
+                if (mitmproxyState?.wireguardConf)
+                    await (
+                        platform as unknown as PlatformApi<'android', RunTarget, Array<'wireguard'>, 'wireguard'>
+                    ).setProxy(null);
+
+                /* eslint-disable require-atomic-updates */
+                trafficCollectionInProgress = false;
+                mitmproxyState = undefined;
+                /* eslint-enable require-atomic-updates */
+
+                return _har;
+            }),
+            killProcess(mitmproxyState.proc),
+        ]);
+
+        return har;
+    };
+
     return {
         platform,
 
@@ -349,10 +509,8 @@ export function startAnalysis<
             const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
             let inProgressTrafficCollectionName: string | undefined;
-            let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
 
             const cleanUpAppAnalysis = async () => {
-                killProcess(mitmproxyState?.proc);
                 platform._internal?.objectionProcesses?.forEach((proc) => killProcess(proc));
             };
 
@@ -378,118 +536,15 @@ export function startAnalysis<
                 startApp: () => platform.startApp(appMeta.id),
 
                 startTrafficCollection: async (name) => {
-                    if (inProgressTrafficCollectionName)
-                        throw new Error(
-                            `Cannot start new traffic collection. Previous one "${inProgressTrafficCollectionName}" is still running.`
-                        );
-                    if (analysisOptions.platform === 'ios')
-                        throw new Error(
-                            'Unimplemented: Missing WireGuard support on iOS in appstraction prevents traffic collection.'
-                        ); // TODO: We don't have wireguard support on iOS, yet. (see https://github.com/tweaselORG/cyanoacrylate/issues/10)
-
                     inProgressTrafficCollectionName = name ?? new Date().toISOString();
-
-                    platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
-
-                    const harOutputPath = temporaryFile({ extension: 'har' });
-
-                    mitmproxyState = {
-                        proc: execa(
-                            'mitmdump',
-                            [
-                                '--mode',
-                                'wireguard',
-                                '-s',
-                                join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
-                                '-s',
-                                join(__dirname, '../mitmproxy-addons/har_dump.py'),
-                                '--set',
-                                `hardump=${harOutputPath}`,
-                                '--set',
-                                'ipcPipeFd=3',
-                            ],
-                            {
-                                stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-                            }
-                        ),
-                        harOutputPath,
-                    };
-
-                    await timeout(
-                        Promise.all([
-                            awaitMitmproxyEvent(
-                                mitmproxyState.proc,
-                                (msg) =>
-                                    msg.status === 'proxyChanged' &&
-                                    msg.servers.some((server) => server.type === 'wireguard' && server.is_running)
-                            )
-                                .then((msg) => {
-                                    if (msg.status !== 'proxyChanged') throw new Error('Unreachable.'); // This will never be reached but we use it as a typeguard
-                                    for (const server of msg.servers) {
-                                        if (
-                                            (server.type !== 'wireguard' && !server.wireguard_conf) ||
-                                            mitmproxyState === undefined
-                                        )
-                                            continue;
-                                        mitmproxyState.wireguardConf = server.wireguard_conf;
-                                        return server.wireguard_conf;
-                                    }
-                                    throw new Error('Failed to start mitmproxy: No WireGuard proxy is running.');
-                                })
-                                .then((wireguardConf) => {
-                                    if (wireguardConf)
-                                        (
-                                            platform as unknown as PlatformApi<
-                                                'android',
-                                                RunTarget,
-                                                Array<'wireguard'>,
-                                                'wireguard'
-                                            >
-                                        ).setProxy(wireguardConf);
-                                }),
-                            awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
-                        ]),
-                        {
-                            milliseconds: 30000,
-                        }
-                    ).catch((e) => {
-                        if (e.name === 'TimeoutError')
-                            throw new TimeoutError('Starting mitmproxy failed after a timeout.');
-                        throw e;
-                    });
+                    return startTrafficCollection({ mode: 'allowlist', apps: [appMeta.id] });
                 },
                 stopTrafficCollection: async () => {
-                    if (!mitmproxyState?.proc) throw new Error('No traffic collection is running.');
-                    await Promise.all([
-                        awaitProcessClose(mitmproxyState.proc).then(async () => {
-                            if (mitmproxyState?.harOutputPath && inProgressTrafficCollectionName) {
-                                try {
-                                    const trafficDump = await readFile(mitmproxyState?.harOutputPath, 'utf-8');
-                                    res.traffic[inProgressTrafficCollectionName] = JSON.parse(trafficDump);
-                                } catch {
-                                    throw new Error(
-                                        `Reading the flows from the temporary file @ "${mitmproxyState.harOutputPath}" failed.`
-                                    );
-                                }
-                            }
+                    if (!inProgressTrafficCollectionName) throw new Error('No traffic collection is running.');
 
-                            if (mitmproxyState?.wireguardConf)
-                                await (
-                                    platform as unknown as PlatformApi<
-                                        'android',
-                                        RunTarget,
-                                        Array<'wireguard'>,
-                                        'wireguard'
-                                    >
-                                ).setProxy(null);
-
-                            /* eslint-disable require-atomic-updates */
-                            inProgressTrafficCollectionName = undefined;
-                            mitmproxyState = undefined;
-                            /* eslint-enable require-atomic-updates */
-                        }),
-                        killProcess(mitmproxyState.proc),
-                    ]);
+                    const har = await stopTrafficCollection();
+                    res.traffic[inProgressTrafficCollectionName] = har;
+                    inProgressTrafficCollectionName = undefined;
                 },
 
                 stop: async (stopOptions) => {
@@ -502,8 +557,12 @@ export function startAnalysis<
                 },
             };
         },
+        startTrafficCollection,
+        stopTrafficCollection,
 
         stop: async () => {
+            await killProcess(mitmproxyState?.proc);
+
             if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator')
                 await killProcess(emulatorProcess);
         },

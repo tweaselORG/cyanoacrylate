@@ -46,7 +46,7 @@ import { pause, startAnalysis } from '../src/index';
 
         const result = await appAnalysis.stop();
 
-        console.log(result, { depth: null });
+        console.dir(result, { depth: null });
         // {
         //    app: { id: '<app id>',  name: '<app name>', version: '<app version>', ... },
         //    traffic: { '2023-03-27T10:29:44.197Z': { log: ... } }  <- The traffic collections are named by a timestamp and contain the collected requests in the HAR format.
