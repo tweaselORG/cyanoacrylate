@@ -1,3 +1,4 @@
+import type { Har } from '@types/har-format';
 import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
@@ -157,7 +158,7 @@ export type AppAnalysisResult = {
      * The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR
      * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
      */
-    traffic: Record<string, string>;
+    traffic: Record<string, Har>;
 };
 
 /** The options for a specific platform/run target combination. */

@@ -54,9 +54,11 @@
     },
     "prettier": "@baltpeter/prettier-config",
     "dependencies": {
+        "@types/har-format": "^1.2.10",
         "appstraction": "^0.1.2",
         "cross-fetch": "^3.1.5",
         "execa": "^7.0.0",
+        "js-ini": "^1.6.0",
         "p-timeout": "^6.1.1",
         "tempy": "^3.0.0"
     },
