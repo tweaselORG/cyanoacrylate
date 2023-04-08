@@ -281,13 +281,13 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
+| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
 | `android.emulator.snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
-| `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
+| `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
 | `android.emulator.startEmulatorOptions.audio?` | `boolean` | Whether to start the emulator with audio (default: `false`). |
-| `android.emulator.startEmulatorOptions.emulatorName` | `string` | The name of the emulator to start. |
+| `android.emulator.startEmulatorOptions.emulatorName?` | `string` | The name of the emulator to start. |
 | `android.emulator.startEmulatorOptions.ephemeral?` | `boolean` | Whether to discard all changes when exiting the emulator (default: `true`). |
 | `android.emulator.startEmulatorOptions.headless?` | `boolean` | Whether to start the emulator in headless mode (default: `false`). |
 | `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
