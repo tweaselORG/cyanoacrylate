@@ -152,6 +152,12 @@ export type AppAnalysis<
      * @see {@link PlatformApi}
      */
     startApp: () => Promise<void>;
+    /**
+     * Force-stop the app.
+     *
+     * @see {@link PlatformApi}
+     */
+    stopApp: () => Promise<void>;
 
     /**
      * Start collecting the traffic of only this app.
@@ -534,6 +540,7 @@ export function startAnalysis<
                 setAppPermissions: (permissions) => platform.setAppPermissions(appMeta.id, permissions),
                 uninstallApp,
                 startApp: () => platform.startApp(appMeta.id),
+                stopApp: () => platform.stopApp(appMeta.id),
 
                 startTrafficCollection: async (name) => {
                     inProgressTrafficCollectionName = name ?? new Date().toISOString();
