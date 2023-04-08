@@ -224,7 +224,7 @@ export type RunTargetOptions<
                 ephemeral?: boolean;
             };
             /** The name of a snapshot to use when resetting the emulator. */
-            snapshotName: string;
+            snapshotName?: string;
         };
         /** The options for the Android physical device run target. */
         device: unknown;
