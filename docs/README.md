@@ -83,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:243](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L243)
+[cyanoacrylate/src/index.ts:249](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L249)
 
 ___
 
@@ -142,6 +142,7 @@ Functions that can be used to control an app analysis.
 | `startApp` | () => `Promise`<`void`\> | Start the app. **`See`** [PlatformApi](README.md#platformapi) |
 | `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the traffic of only this app. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. Only available on Android. Only one traffic collection can be active at a time. |
 | `stop` | (`options?`: { `uninstallApp?`: `boolean`  }) => `Promise`<[`AppAnalysisResult`](README.md#appanalysisresult)\> | Stop the app analysis and return the collected data. |
+| `stopApp` | () => `Promise`<`void`\> | Force-stop the app. **`See`** [PlatformApi](README.md#platformapi) |
 | `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the app's traffic. This will stop the proxy on the host computer. The collected traffic is available from the `traffic` property of the object returned by `stop()`. |
 | `uninstallApp` | () => `Promise`<`void`\> | Uninstall the app. **`See`** [PlatformApi](README.md#platformapi) |
 
@@ -166,7 +167,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:189](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L189)
+[cyanoacrylate/src/index.ts:195](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L195)
 
 ___
 
@@ -280,10 +281,10 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
-| `android.emulator.snapshotName` | `string` | The name of a snapshot to use when resetting the emulator. |
+| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
+| `android.emulator.snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
 | `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName`: `string` ; `ephemeral?`: `boolean` ; `headless?`: `boolean`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
 | `android.emulator.startEmulatorOptions.audio?` | `boolean` | Whether to start the emulator with audio (default: `false`). |
 | `android.emulator.startEmulatorOptions.emulatorName` | `string` | The name of the emulator to start. |
@@ -295,7 +296,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:201](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L201)
+[cyanoacrylate/src/index.ts:207](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L207)
 
 ___
 
@@ -438,4 +439,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:276](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L276)
+[cyanoacrylate/src/index.ts:282](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L282)
