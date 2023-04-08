@@ -215,7 +215,7 @@ export type RunTargetOptions<
             /** Options for the emulator if you want it to be automatically started and stopped by this library. */
             startEmulatorOptions?: {
                 /** The name of the emulator to start. */
-                emulatorName: string;
+                emulatorName?: string;
                 /** Whether to start the emulator in headless mode (default: `false`). */
                 headless?: boolean;
                 /** Whether to start the emulator with audio (default: `false`). */
