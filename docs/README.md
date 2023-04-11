@@ -57,7 +57,7 @@ Functions that can be used to instrument the device and analyze apps.
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
 | `startAppAnalysis` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
-| `startTrafficCollection` | (`options?`: [`TrafficCollectionOptions`](README.md#trafficcollectionoptions)) => `Promise`<`void`\> | Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. Only available on Android. Only one traffic collection can be active at a time. |
+| `startTrafficCollection` | (`options?`: `Platform` extends ``"android"`` ? [`TrafficCollectionOptions`](README.md#trafficcollectionoptions) : `never`) => `Promise`<`void`\> | Start collecting the device's traffic. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic collection to specific apps. Only one traffic collection can be active at a time. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
 | `stopTrafficCollection` | () => `Promise`<`Har`\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
 
@@ -69,7 +69,7 @@ ___
 
 ### AnalysisOptions
 
-Ƭ **AnalysisOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)<`Capabilities`\>[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
+Ƭ **AnalysisOptions**<`Platform`, `RunTarget`, `Capabilities`\>: { `capabilities`: `Capabilities` ; `platform`: `Platform` ; `runTarget`: `RunTarget`  } & [`RunTargetOptions`](README.md#runtargetoptions)[`Platform`][`RunTarget`] extends `object` ? { `targetOptions`: [`RunTargetOptions`](README.md#runtargetoptions)[`Platform`][`RunTarget`]  } : { `targetOptions?`: `Record`<`string`, `never`\>  }
 
 The options for the `startAnalysis()` function.
 
@@ -83,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:249](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L249)
+[cyanoacrylate/src/index.ts:252](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L252)
 
 ___
 
@@ -140,15 +140,15 @@ Functions that can be used to control an app analysis.
 | `installApp` | () => `Promise`<`void`\> | Install the specified app. **`See`** [PlatformApi](README.md#platformapi) |
 | `setAppPermissions` | (`permissions?`: `Parameters`<[`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\>[``"setAppPermissions"``]\>[``1``]) => `Promise`<`void`\> | Set the permissions for the app with the given app ID. By default, it will grant all known permissions (including dangerous permissions on Android) and set the location permission on iOS to `always`. You can specify which permissions to grant/deny using the `permissions` argument. Requires the `ssh` and `frida` capabilities on iOS. **`See`** [PlatformApi](README.md#platformapi) |
 | `startApp` | () => `Promise`<`void`\> | Start the app. **`See`** [PlatformApi](README.md#platformapi) |
-| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the traffic of only this app. This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. Only available on Android. Only one traffic collection can be active at a time. |
+| `startTrafficCollection` | (`name?`: `string`) => `Promise`<`void`\> | Start collecting the traffic of only this app on Android and of the whole device on iOS. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. Only one traffic collection can be active at a time. |
 | `stop` | (`options?`: { `uninstallApp?`: `boolean`  }) => `Promise`<[`AppAnalysisResult`](README.md#appanalysisresult)\> | Stop the app analysis and return the collected data. |
 | `stopApp` | () => `Promise`<`void`\> | Force-stop the app. **`See`** [PlatformApi](README.md#platformapi) |
-| `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the app's traffic. This will stop the proxy on the host computer. The collected traffic is available from the `traffic` property of the object returned by `stop()`. |
+| `stopTrafficCollection` | () => `Promise`<`void`\> | Stop collecting the app's (or, on iOS, the device's) traffic. This will stop the proxy on the host computer. The collected traffic is available from the `traffic` property of the object returned by `stop()`. |
 | `uninstallApp` | () => `Promise`<`void`\> | Uninstall the app. **`See`** [PlatformApi](README.md#platformapi) |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:110](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L110)
+[cyanoacrylate/src/index.ts:115](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L115)
 
 ___
 
@@ -167,7 +167,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:195](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L195)
+[cyanoacrylate/src/index.ts:201](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L201)
 
 ___
 
@@ -266,16 +266,9 @@ ___
 
 ### RunTargetOptions
 
-Ƭ **RunTargetOptions**<`Capabilities`, `Capability`\>: `Object`
+Ƭ **RunTargetOptions**: `Object`
 
 The options for a specific platform/run target combination.
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
-| `Capability` | `Capabilities`[`number`] |
 
 #### Type declaration
 
@@ -290,19 +283,22 @@ The options for a specific platform/run target combination.
 | `android.emulator.startEmulatorOptions.emulatorName?` | `string` | The name of the emulator to start. |
 | `android.emulator.startEmulatorOptions.ephemeral?` | `boolean` | Whether to discard all changes when exiting the emulator (default: `true`). |
 | `android.emulator.startEmulatorOptions.headless?` | `boolean` | Whether to start the emulator in headless mode (default: `false`). |
-| `ios` | { `device`: ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | ``"ssh"`` extends `Capability` ? { `ip`: `string` ; `rootPw?`: `string`  } : `unknown` | The options for the iOS physical device run target. |
+| `ios` | { `device`: { `ip`: `string` ; `proxyIp`: `string` ; `rootPw?`: `string`  } ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | { `ip`: `string` ; `proxyIp`: `string` ; `rootPw?`: `string`  } | The options for the iOS physical device run target. |
+| `ios.device.ip` | `string` | The device's IP address. |
+| `ios.device.proxyIp` | `string` | The IP address of the host running the proxy to set up on the device. |
+| `ios.device.rootPw?` | `string` | The password of the root user on the device, defaults to `alpine` if not set. |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:207](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L207)
+[cyanoacrylate/src/index.ts:213](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L213)
 
 ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"ssh"`` \| ``"frida"`` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? `never` : `never`
 
 A capability supported by this library.
 
@@ -439,4 +435,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[cyanoacrylate/src/index.ts:282](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L282)
+[cyanoacrylate/src/index.ts:286](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L286)

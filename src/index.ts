@@ -1,4 +1,4 @@
-import type { PlatformApi, SupportedPlatform, SupportedRunTarget } from 'appstraction';
+import type { PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
 import { getDirname } from 'cross-dirname';
 import type { ExecaChildProcess } from 'execa';
@@ -19,7 +19,7 @@ const __dirname = getDirname();
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
-    ? 'ssh' | 'frida'
+    ? never
     : never;
 
 /** Metadata about an app. */
@@ -85,17 +85,22 @@ export type Analysis<
         options?: { resetApp?: boolean; noSigint?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /**
-     * Start collecting the device's traffic. This will start a WireGuard proxy on the host computer on port `51820`. It
-     * will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You
-     * can configure which apps to include using the `options` parameter.
+     * Start collecting the device's traffic.
      *
-     * Only available on Android.
+     * On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically
+     * configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which
+     * apps to include using the `options` parameter.
+     *
+     * On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically
+     * configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic
+     * collection to specific apps.
      *
      * Only one traffic collection can be active at a time.
      *
      * @param options Set which apps to include in the traffic collection. If not specified, all apps will be included.
+     *   Only available on Android.
      */
-    startTrafficCollection: (options?: TrafficCollectionOptions) => Promise<void>;
+    startTrafficCollection: (options?: Platform extends 'android' ? TrafficCollectionOptions : never) => Promise<void>;
     /**
      * Stop collecting the device's traffic. This will stop the proxy on the host computer.
      *
@@ -160,12 +165,13 @@ export type AppAnalysis<
     stopApp: () => Promise<void>;
 
     /**
-     * Start collecting the traffic of only this app.
+     * Start collecting the traffic of only this app on Android and of the whole device on iOS.
      *
-     * This will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the
-     * target to use the WireGuard proxy and trust the mitmproxy TLS certificate.
+     * On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically
+     * configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate.
      *
-     * Only available on Android.
+     * On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically
+     * configure the target to use the proxy and trust the mitmproxy TLS certificate.
      *
      * Only one traffic collection can be active at a time.
      *
@@ -173,7 +179,7 @@ export type AppAnalysis<
      */
     startTrafficCollection: (name?: string) => Promise<void>;
     /**
-     * Stop collecting the app's traffic. This will stop the proxy on the host computer.
+     * Stop collecting the app's (or, on iOS, the device's) traffic. This will stop the proxy on the host computer.
      *
      * The collected traffic is available from the `traffic` property of the object returned by `stop()`.
      */
@@ -204,10 +210,7 @@ export type AppAnalysisResult = {
 
 /** The options for a specific platform/run target combination. */
 // Use `unknown` here to mean "no options", and `never` to mean "not supported".
-export type RunTargetOptions<
-    Capabilities extends SupportedCapability<'android' | 'ios'>[],
-    Capability = Capabilities[number]
-> = {
+export type RunTargetOptions = {
     /** The options for the Android platform. */
     android: {
         /** The options for the Android emulator run target. */
@@ -234,14 +237,14 @@ export type RunTargetOptions<
         /** The options for the iOS emulator run target. */
         emulator: never;
         /** The options for the iOS physical device run target. */
-        device: 'ssh' extends Capability
-            ? {
-                  /** The password of the root user on the device, defaults to `alpine` if not set. */
-                  rootPw?: string;
-                  /** The device's IP address. */
-                  ip: string;
-              }
-            : unknown;
+        device: {
+            /** The password of the root user on the device, defaults to `alpine` if not set. */
+            rootPw?: string;
+            /** The device's IP address. */
+            ip: string;
+            /** The IP address of the host running the proxy to set up on the device. */
+            proxyIp: string;
+        };
     };
 };
 
@@ -258,13 +261,14 @@ export type AnalysisOptions<
     /**
      * The capabilities you want. Depending on what you're trying to do, you may not need or want to root the device,
      * install Frida, etc. In this case, you can exclude those capabilities. This will influence which functions you can
-     * run.
+     * run. For Android, the `wireguard` and `root` capabilities are preset in appstraction. For iOS, both the `ssh` and
+     * `frida` capibilities are preset, since they are required for the analysis to work.
      */
     capabilities: Capabilities;
-} & (RunTargetOptions<Capabilities>[Platform][RunTarget] extends object
+} & (RunTargetOptions[Platform][RunTarget] extends object
     ? {
           /** The options for the selected platform/run target combination. */
-          targetOptions: RunTargetOptions<Capabilities>[Platform][RunTarget];
+          targetOptions: RunTargetOptions[Platform][RunTarget];
       }
     : {
           /** The options for the selected platform/run target combination. */
@@ -287,28 +291,20 @@ export function startAnalysis<
     const platformOptions = {
         platform: analysisOptions.platform,
         runTarget: analysisOptions.runTarget,
-        capabilities: analysisOptions.capabilities,
+        capabilities:
+            analysisOptions.platform === 'android'
+                ? [...analysisOptions.capabilities, 'wireguard', 'root']
+                : analysisOptions.platform === 'ios'
+                ? ['ssh', 'frida']
+                : analysisOptions.capabilities,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         targetOptions: analysisOptions.targetOptions as any,
-    };
+    } as unknown as PlatformApiOptions<Platform, RunTarget, Capabilities>;
 
     const venvPath = join(__dirname, '../.venv/bin');
     process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
 
-    const platform = (
-        analysisOptions.platform === 'android'
-            ? platformApi({
-                  ...platformOptions,
-                  platform: 'android',
-                  // The casting is needed because TypeScript doesn't understand that capabilities is already as expected.
-                  capabilities: [
-                      ...(analysisOptions.capabilities as SupportedCapability<'android'>[]),
-                      'wireguard',
-                      'root',
-                  ],
-              })
-            : platformApi(platformOptions)
-    ) as PlatformApi<Platform, RunTarget, Capabilities>;
+    const platform = platformApi(platformOptions);
 
     let emulatorProcess: ExecaChildProcess | undefined;
     let trafficCollectionInProgress = false;
@@ -317,10 +313,6 @@ export function startAnalysis<
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
         if (trafficCollectionInProgress)
             throw new Error('Cannot start new traffic collection. A previous one is still running.');
-        if (analysisOptions.platform === 'ios')
-            throw new Error(
-                'Unimplemented: Missing WireGuard support on iOS in appstraction prevents traffic collection (see https://github.com/tweaselORG/cyanoacrylate/issues/10).'
-            );
 
         trafficCollectionInProgress = true;
 
@@ -328,30 +320,31 @@ export function startAnalysis<
 
         const harOutputPath = temporaryFile({ extension: 'har' });
 
+        const mitmproxyOptions = [
+            '-s',
+            join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
+            '-s',
+            join(__dirname, '../mitmproxy-addons/har_dump.py'),
+            '--set',
+            `hardump=${harOutputPath}`,
+            '--set',
+            'ipcPipeFd=3',
+        ];
+        if (analysisOptions.platform === 'android') mitmproxyOptions.push('--mode', 'wireguard');
+
         mitmproxyState = {
-            proc: execa(
-                'mitmdump',
-                [
-                    '--mode',
-                    'wireguard',
-                    '-s',
-                    join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
-                    '-s',
-                    join(__dirname, '../mitmproxy-addons/har_dump.py'),
-                    '--set',
-                    `hardump=${harOutputPath}`,
-                    '--set',
-                    'ipcPipeFd=3',
-                ],
-                {
-                    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-                }
-            ),
+            proc: execa('mitmdump', mitmproxyOptions, {
+                stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+            }),
             harOutputPath,
         };
 
-        await timeout(
-            Promise.all([
+        const mitmproxyPromises: Promise<unknown>[] = [
+            awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
+        ];
+
+        if (analysisOptions.platform === 'android')
+            mitmproxyPromises.push(
                 awaitMitmproxyEvent(
                     mitmproxyState.proc,
                     (msg) =>
@@ -390,13 +383,27 @@ export function startAnalysis<
                                 >
                             ).setProxy(stringifyIni(parsedWireguardConf));
                         }
-                    }),
-                awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
-            ]),
-            {
-                milliseconds: 30000,
-            }
-        ).catch((e) => {
+                    })
+            );
+        else if (analysisOptions.platform === 'ios')
+            mitmproxyPromises.push(
+                awaitMitmproxyEvent(
+                    mitmproxyState.proc,
+                    (msg) =>
+                        msg.status === 'proxyChanged' &&
+                        msg.servers.some((server) => server.type === 'regular' && server.is_running)
+                ).then((msg) =>
+                    (platform as unknown as PlatformApi<'ios', 'device', Array<'ssh'>, 'ssh'>).setProxy({
+                        host: (analysisOptions as unknown as AnalysisOptions<'ios', 'device', never>).targetOptions
+                            .proxyIp,
+                        port: msg.status === 'proxyChanged' ? msg.servers[0]?.listen_addrs?.[0]?.[1] || 8080 : 8080,
+                    })
+                )
+            );
+
+        await timeout(Promise.all(mitmproxyPromises), {
+            milliseconds: 30000,
+        }).catch((e) => {
             if (e.name === 'TimeoutError') throw new TimeoutError('Starting mitmproxy failed after a timeout.');
             throw e;
         });
@@ -419,10 +426,10 @@ export function startAnalysis<
                     );
                 }
 
-                if (mitmproxyState?.wireguardConf)
-                    await (
-                        platform as unknown as PlatformApi<'android', RunTarget, Array<'wireguard'>, 'wireguard'>
-                    ).setProxy(null);
+                await (
+                    platform as unknown as PlatformApi<'android', RunTarget, Array<'wireguard'>, 'wireguard'>
+                ).setProxy(null);
+                await platform.removeCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
                 /* eslint-disable require-atomic-updates */
                 trafficCollectionInProgress = false;
@@ -450,7 +457,7 @@ export function startAnalysis<
                 analysisOptions.runTarget === 'emulator'
             ) {
                 const targetOptions = analysisOptions.targetOptions as
-                    | RunTargetOptions<Capabilities>['android']['emulator']
+                    | RunTargetOptions['android']['emulator']
                     | undefined;
                 const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
                 if (emulatorName) {
@@ -481,9 +488,8 @@ export function startAnalysis<
             if (analysisOptions.platform !== 'android' || analysisOptions.runTarget !== 'emulator')
                 throw new Error('Resetting devices is only supported for Android emulators.');
 
-            const snapshotName = (
-                analysisOptions.targetOptions as RunTargetOptions<Capabilities>['android']['emulator']
-            )?.snapshotName;
+            const snapshotName = (analysisOptions.targetOptions as RunTargetOptions['android']['emulator'])
+                ?.snapshotName;
             if (!snapshotName) throw new Error('Cannot reset device: No snapshot name specified.');
 
             return timeout(platform.resetDevice(snapshotName), {
