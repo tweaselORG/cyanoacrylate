@@ -56,14 +56,14 @@ type MitmproxyEvent =
     | {
           status: 'proxyChanged';
           /** An array of server specs which contains all the running servers, one for each mode. */
-          servers: MitmproxyServerSpec<'wireguard' | string>[];
+          servers: MitmproxyServerSpec<'wireguard' | 'regular' | string>[];
       };
 
 /**
  * The JSON serialization of the python class mitmproxy.proxy.mode_servers.ServerInstance. See
  * https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
  */
-type MitmproxyServerSpec<Type extends 'wireguard' | string> = {
+type MitmproxyServerSpec<Type extends 'wireguard' | 'regular' | string> = {
     type: Type;
     description: string;
     full_spec: string;
