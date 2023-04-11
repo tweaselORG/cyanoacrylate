@@ -97,9 +97,14 @@ export const killProcess = async (proc?: ExecaChildProcess) => {
  */
 export const awaitMitmproxyEvent = (proc: ExecaChildProcess<string>, condition: (msg: MitmproxyEvent) => boolean) =>
     new Promise<MitmproxyEvent>((res) => {
-        proc.on('message', (msg: MitmproxyEvent) => {
-            if (condition(msg)) res(msg);
-        });
+        const listener = (msg: MitmproxyEvent) => {
+            if (condition(msg)) {
+                proc.removeListener('message', listener);
+                res(msg);
+            }
+        };
+
+        proc.on('message', listener);
     });
 
 /**
