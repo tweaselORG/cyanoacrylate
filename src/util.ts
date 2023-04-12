@@ -97,14 +97,20 @@ export const killProcess = async (proc?: ExecaChildProcess) => {
  */
 export const awaitMitmproxyEvent = (proc: ExecaChildProcess<string>, condition: (msg: MitmproxyEvent) => boolean) =>
     new Promise<MitmproxyEvent>((res) => {
-        const listener = (msg: MitmproxyEvent) => {
-            if (condition(msg)) {
-                proc.removeListener('message', listener);
-                res(msg);
+        const listener = (chunk: string | Buffer | undefined) => {
+            const lines = chunk?.toString().split('\n') || [];
+            for (const line of lines) {
+                if (!line.startsWith('cyanoacrylate:')) continue;
+
+                const msg = JSON.parse(line.replace(/^cyanoacrylate:/, '')) as MitmproxyEvent;
+                if (condition(msg)) {
+                    proc.stdout?.removeListener('message', listener);
+                    res(msg);
+                }
             }
         };
 
-        proc.on('message', listener);
+        proc.stdout?.addListener('data', listener);
     });
 
 /**
