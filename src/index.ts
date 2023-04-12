@@ -321,6 +321,7 @@ export function startAnalysis<
         const harOutputPath = temporaryFile({ extension: 'har' });
 
         const mitmproxyOptions = [
+            '--quiet', // We cannot reliably read the mitmproxy stdout anyway, so we suppress it. (See: https://github.com/tweaselORG/cyanoacrylate/issues/5)
             '-s',
             join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
             '-s',
@@ -328,14 +329,12 @@ export function startAnalysis<
             '--set',
             `hardump=${harOutputPath}`,
             '--set',
-            'ipcPipeFd=3',
+            'ipcPipeFd=1', // Write the ipc events to stdout (which is always fd 1)
         ];
         if (analysisOptions.platform === 'android') mitmproxyOptions.push('--mode', 'wireguard');
 
         mitmproxyState = {
-            proc: execa('mitmdump', mitmproxyOptions, {
-                stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-            }),
+            proc: execa('mitmdump', mitmproxyOptions),
             harOutputPath,
         };
 

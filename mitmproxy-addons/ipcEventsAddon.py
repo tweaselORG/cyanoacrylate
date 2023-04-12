@@ -29,7 +29,7 @@ class IpcEventRelay:
     def _sendIpcMessage(self, message):
         """Takes a dict and sends it through a pipe as JSON."""
         if(ctx.options.ipcPipeFd is not None):
-            os.write(ctx.options.ipcPipeFd, bytes(json.dumps(message) + '\n', 'utf8'))
+            os.write(ctx.options.ipcPipeFd, bytes("cyanoacrylate:" + json.dumps(message) + '\n', 'utf8'))
 
     def running(self):
         self._sendIpcMessage({"status": "running"})
