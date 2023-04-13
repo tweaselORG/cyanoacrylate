@@ -1,7 +1,3 @@
-# The default folder to put you mitmproxy addons to import
-mitmproxy-addons/har_dump.py
-.venv/
-
 tmp/
 *.tmp
 tmp.*
