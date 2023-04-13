@@ -42,7 +42,7 @@ The following example collects the traffic for an app in the Android emulator. I
 
 ```ts
 (async () => {
-    const analysis = startAnalysis({
+    const analysis = await startAnalysis({
         platform: 'android',
         runTarget: 'emulator',
         capabilities: [],

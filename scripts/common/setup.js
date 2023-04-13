@@ -7,7 +7,7 @@ import { execa } from 'execa';
 import { existsSync } from 'fs';
 import { copyFile, mkdir, writeFile } from 'fs/promises';
 import globalCacheDir from 'global-cache-dir';
-import { homedir, platform } from 'os';
+import { homedir } from 'os';
 import { join } from 'path';
 
 // Set up our Python dependencies (a venv with the modules from `requirements.txt` and the mitmproxy addons).
@@ -20,9 +20,11 @@ export const setupPythonDependencies = async () => {
     const mitmproxyAddonsDir = join(cacheDir, 'mitmproxy-addons');
     await mkdir(mitmproxyAddonsDir, { recursive: true });
 
-    const pipBinary = platform() === 'win32' ? join(venvDir, 'Scripts/pip.exe') : join(venvDir, 'bin/pip');
+    // eslint-disable-next-line no-undef
+    const pipBinary = process.platform === 'win32' ? join(venvDir, 'Scripts/pip.exe') : join(venvDir, 'bin/pip');
     const mitmdumpBinary =
-        platform() === 'win32' ? join(venvDir, 'Scripts/mitmdump.exe') : join(venvDir, 'bin/mitmdump');
+        // eslint-disable-next-line no-undef
+        process.platform === 'win32' ? join(venvDir, 'Scripts/mitmdump.exe') : join(venvDir, 'bin/mitmdump');
 
     // Create a venv and install all python requirements
     await execa('python', ['-m', 'venv', venvDir], { stdio: 'inherit' });
