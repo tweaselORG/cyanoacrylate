@@ -1,3 +1,4 @@
+import { ctrlc } from 'ctrlc-windows';
 import dns from 'dns';
 import type { ExecaChildProcess } from 'execa';
 import timeout from 'p-timeout';
@@ -82,7 +83,8 @@ export const dnsLookup = promisify(dns.lookup);
  */
 export const killProcess = async (proc?: ExecaChildProcess) => {
     if (proc) {
-        proc.kill();
+        if (process.platform === 'win32' && proc.pid) ctrlc(proc.pid);
+        else proc.kill();
         await timeout(proc, { milliseconds: 15000 }).catch(() => proc.kill(9));
     }
 };
