@@ -11,7 +11,7 @@ import { pause, startAnalysis } from '../src/index';
     const snapshotName = process.argv[3] || 'snapshot-with-setup-emu';
     const apkFolder = process.argv[4] || 'path/to/app-files';
 
-    const analysis = startAnalysis({
+    const analysis = await startAnalysis({
         platform: 'android',
         runTarget: 'emulator',
         capabilities: ['frida', 'certificate-pinning-bypass'],

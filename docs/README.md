@@ -408,7 +408,7 @@ ___
 
 ### startAnalysis
 
-▸ **startAnalysis**<`Platform`, `RunTarget`, `Capabilities`\>(`analysisOptions`): [`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>
+▸ **startAnalysis**<`Platform`, `RunTarget`, `Capabilities`\>(`analysisOptions`): `Promise`<[`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>\>
 
 Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
 you want to end the analysis.
@@ -429,7 +429,7 @@ you want to end the analysis.
 
 #### Returns
 
-[`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>
+`Promise`<[`Analysis`](README.md#analysis)<`Platform`, `RunTarget`, `Capabilities`\>\>
 
 An object that can be used to instrument the device and analyze apps.
 

@@ -282,11 +282,19 @@ export type AnalysisOptions<
  *
  * @returns An object that can be used to instrument the device and analyze apps.
  */
-export function startAnalysis<
+export async function startAnalysis<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
     Capabilities extends SupportedCapability<Platform>[]
->(analysisOptions: AnalysisOptions<Platform, RunTarget, Capabilities>): Analysis<Platform, RunTarget, Capabilities> {
+>(
+    analysisOptions: AnalysisOptions<Platform, RunTarget, Capabilities>
+): Promise<Analysis<Platform, RunTarget, Capabilities>> {
+    await ensurePythonDependencies();
+
+    const cacheDir = await globalCacheDir('cyanoacrylate');
+    const venvPath = join(cacheDir, 'venv', process.platform === 'win32' ? 'Scripts' : 'bin');
+    process.env['PATH'] = `${venvPath}${process.platform === 'win32' ? ';' : ':'}${process.env['PATH']}`;
+
     const platformOptions = {
         platform: analysisOptions.platform,
         runTarget: analysisOptions.runTarget,
@@ -307,12 +315,6 @@ export function startAnalysis<
     let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
-        await ensurePythonDependencies();
-
-        const cacheDir = await globalCacheDir('cyanoacrylate');
-        const venvPath = join(cacheDir, '.venv/bin');
-        process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
-
         if (trafficCollectionInProgress)
             throw new Error('Cannot start new traffic collection. A previous one is still running.');
 
@@ -500,7 +502,7 @@ export function startAnalysis<
 
                 // Sometimes, the Android emulator gets stuck and doesn't accept any commands anymore. In this case, we
                 // restart it.
-                await timeout(this.ensureDevice({ killExisting: true }), { milliseconds: 60 * 1000 });
+                await timeout((await this).ensureDevice({ killExisting: true }), { milliseconds: 60 * 1000 });
                 await timeout(platform.resetDevice(snapshotName), { milliseconds: 5 * 60 * 1000 });
             });
         },
