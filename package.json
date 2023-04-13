@@ -26,9 +26,9 @@
     "types": "dist/index.d.ts",
     "files": [
         "/dist",
-        "/mitmproxy-addons/ipcEventsAddon.py",
         "requirements.txt",
-        "/scripts"
+        "/scripts",
+        "/src/ipcEventsAddon.py"
     ],
     "scripts": {
         "build": "parcel build",

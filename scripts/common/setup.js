@@ -7,7 +7,7 @@ import { execa } from 'execa';
 import { existsSync } from 'fs';
 import { copyFile, mkdir, writeFile } from 'fs/promises';
 import globalCacheDir from 'global-cache-dir';
-import { homedir } from 'os';
+import { homedir, platform } from 'os';
 import { join } from 'path';
 
 // Set up our Python dependencies (a venv with the modules from `requirements.txt` and the mitmproxy addons).
@@ -20,12 +20,16 @@ export const setupPythonDependencies = async () => {
     const mitmproxyAddonsDir = join(cacheDir, 'mitmproxy-addons');
     await mkdir(mitmproxyAddonsDir, { recursive: true });
 
+    const pipBinary = platform() === 'win32' ? join(venvDir, 'Scripts/pip.exe') : join(venvDir, 'bin/pip');
+    const mitmdumpBinary =
+        platform() === 'win32' ? join(venvDir, 'Scripts/mitmdump.exe') : join(venvDir, 'bin/mitmdump');
+
     // Create a venv and install all python requirements
     await execa('python', ['-m', 'venv', venvDir], { stdio: 'inherit' });
-    await execa(`${venvDir}/bin/pip`, ['install', '-r', 'requirements.txt'], { stdio: 'inherit' });
+    await execa(pipBinary, ['install', '-r', 'requirements.txt'], { stdio: 'inherit' });
 
     // Download the har_dump.py addon corresponding to the current mitmproxy version
-    const mitmproxyVersion = await execa(`${venvDir}/bin/mitmdump`, ['--version']).then(
+    const mitmproxyVersion = await execa(mitmdumpBinary, ['--version']).then(
         ({ stdout }) => stdout.match(/Mitmproxy: ([0-9.]+)/)?.[1]
     );
     const mitmproxyCommitSha = await fetch(
@@ -48,7 +52,7 @@ export const setupPythonDependencies = async () => {
 
     // Start mitmproxy once to create certificate files if they don't exist, yet.
     if (!existsSync(join(homedir(), '.mitmproxy'))) {
-        const mitmproxyProcess = execa(`${venvDir}/bin/mitmdump`, [
+        const mitmproxyProcess = execa(mitmdumpBinary, [
             '-q',
             '-s',
             join(mitmproxyAddonsDir, 'ipcEventsAddon.py'),
