@@ -1,9 +1,9 @@
 import type { PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
-import { getDirname } from 'cross-dirname';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { readFile } from 'fs/promises';
+import globalCacheDir from 'global-cache-dir';
 import type { Har } from 'har-format';
 import { parse as parseIni, stringify as stringifyIni } from 'js-ini';
 import { homedir } from 'os';
@@ -11,9 +11,8 @@ import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
+import { ensurePythonDependencies } from '../scripts/common/setup';
 import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
-
-const __dirname = getDirname();
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -301,9 +300,6 @@ export function startAnalysis<
         targetOptions: analysisOptions.targetOptions as any,
     } as unknown as PlatformApiOptions<Platform, RunTarget, Capabilities>;
 
-    const venvPath = join(__dirname, '../.venv/bin');
-    process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
-
     const platform = platformApi(platformOptions);
 
     let emulatorProcess: ExecaChildProcess | undefined;
@@ -311,6 +307,12 @@ export function startAnalysis<
     let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
+        await ensurePythonDependencies();
+
+        const cacheDir = await globalCacheDir('cyanoacrylate');
+        const venvPath = join(cacheDir, '.venv/bin');
+        process.env['PATH'] = `${venvPath}:${process.env['PATH']}`;
+
         if (trafficCollectionInProgress)
             throw new Error('Cannot start new traffic collection. A previous one is still running.');
 
@@ -323,9 +325,9 @@ export function startAnalysis<
         const mitmproxyOptions = [
             '--quiet', // We cannot reliably read the mitmproxy stdout anyway, so we suppress it. (See: https://github.com/tweaselORG/cyanoacrylate/issues/5)
             '-s',
-            join(__dirname, '../mitmproxy-addons/ipcEventsAddon.py'),
+            join(cacheDir, 'mitmproxy-addons/ipcEventsAddon.py'),
             '-s',
-            join(__dirname, '../mitmproxy-addons/har_dump.py'),
+            join(cacheDir, 'mitmproxy-addons/har_dump.py'),
             '--set',
             `hardump=${harOutputPath}`,
             '--set',
