@@ -11,8 +11,6 @@ The current features include:
 - Collecting HTTP(S) traffic in HAR format
 - Automatic CA management and WireGuard mitmproxy setup
 
-**Currently, this module only supports POSIX environments. It will not run on Windows out of the box.**
-
 ## Installation  
 
 You can install cyanoacrylate using yarn or npm:
