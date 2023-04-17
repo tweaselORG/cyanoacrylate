@@ -526,7 +526,8 @@ export async function startAnalysis<
             let inProgressTrafficCollectionName: string | undefined;
 
             const cleanUpAppAnalysis = async () => {
-                platform._internal?.objectionProcesses?.forEach((proc) => killProcess(proc));
+                if ('objectionProcesses' in platform._internal)
+                    platform._internal?.objectionProcesses?.forEach((proc) => killProcess(proc));
             };
 
             if (options?.resetApp) {
