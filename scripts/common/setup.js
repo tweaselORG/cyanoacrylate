@@ -62,8 +62,13 @@ export const setupPythonDependencies = async () => {
             'ipcPipeFd=1',
         ]);
         mitmproxyProcess.stdout?.addListener('data', (data) => {
-            const msg = JSON.parse(data);
-            if (msg.status === 'running') mitmproxyProcess.kill();
+            const lines = data?.toString().split('\n') || [];
+            for (const line of lines) {
+                if (!line.startsWith('cyanoacrylate:')) continue;
+
+                const msg = JSON.parse(line.replace(/^cyanoacrylate:/, ''));
+                if (msg.status === 'running') mitmproxyProcess.kill();
+            }
         });
     }
 };
