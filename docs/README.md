@@ -56,7 +56,7 @@ Functions that can be used to instrument the device and analyze apps.
 | `ensureTrackingDomainResolution` | () => `Promise`<`void`\> | Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is interfering with the results. |
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
-| `startAppAnalysis` | (`appIdOrPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
+| `startAppAnalysis` | (`appIdOrPath`: `string` \| `AppPath`<`Platform`\>, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
 | `startTrafficCollection` | (`options?`: `Platform` extends ``"android"`` ? [`TrafficCollectionOptions`](README.md#trafficcollectionoptions) : `never`) => `Promise`<`void`\> | Start collecting the device's traffic. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic collection to specific apps. Only one traffic collection can be active at a time. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
 | `stopTrafficCollection` | () => `Promise`<`Har`\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
@@ -95,7 +95,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:36
+node_modules/appstraction/dist/index.d.ts:46
 
 ___
 
@@ -185,7 +185,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:305
+node_modules/appstraction/dist/index.d.ts:354
 
 ___
 
@@ -204,7 +204,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:307
+node_modules/appstraction/dist/index.d.ts:356
 
 ___
 
@@ -216,7 +216,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:40
+node_modules/appstraction/dist/index.d.ts:50
 
 ___
 
@@ -245,7 +245,7 @@ Functions that are available for the platforms.
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
-| `installApp` | (`appPath`: `Platform` extends ``"android"`` ? `string` \| `string`[] : `string`) => `Promise`<`void`\> | Install the app at the given path. |
+| `installApp` | (`appPath`: `AppPath`<`Platform`\>, `obbPaths?`: `Platform` extends ``"android"`` ? `ObbInstallSpec`[] : `never`) => `Promise`<`void`\> | Install the app at the given path. |
 | `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
 | `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
@@ -256,11 +256,15 @@ Functions that are available for the platforms.
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? `WireGuardConfig` : `Proxy` \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: `Proxy` \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
+| `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
+| `target.platform` | `Platform` | The platform this instance is configured for, i.e. `ios` or `android`. |
+| `target.runTarget` | `RunTarget` | The run target this instance is configured for, i.e. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
+| `waitForDevice` | (`tries?`: `number`) => `Promise`<`void`\> | Wait until the device or emulator has been connected and has booted up completely. |
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:46
+node_modules/appstraction/dist/index.d.ts:73
 
 ___
 
@@ -322,7 +326,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:42
+node_modules/appstraction/dist/index.d.ts:52
 
 ___
 
@@ -340,7 +344,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:44
+node_modules/appstraction/dist/index.d.ts:54
 
 ___
 
@@ -368,7 +372,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:34
+node_modules/appstraction/dist/index.d.ts:44
 
 ___
 
@@ -380,7 +384,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:38
+node_modules/appstraction/dist/index.d.ts:48
 
 ## Functions
 
@@ -402,7 +406,7 @@ Pause for a given duration.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:9
+node_modules/appstraction/dist/index.d.ts:17
 
 ___
 
