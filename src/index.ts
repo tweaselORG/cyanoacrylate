@@ -1,4 +1,4 @@
-import type { PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
+import type { AppPath, PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
@@ -79,7 +79,7 @@ export type Analysis<
      * @returns An object to control the analysis of the specified app.
      */
     startAppAnalysis: (
-        appIdOrPath: Platform extends 'android' ? string | string[] : string,
+        appIdOrPath: string | AppPath<Platform>,
         options?: { resetApp?: boolean; noSigint?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /**
@@ -517,10 +517,8 @@ export async function startAnalysis<
                     return { id: appIdOrPath };
                 }
 
-                // This might not be the main APK, but we don‘t care because we should get the same meta information out of all the APKs
-                const appPathMain = typeof appIdOrPath === 'string' ? appIdOrPath : appIdOrPath[0] ?? '';
-                const appMeta = await parseAppMeta(appPathMain);
-                if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
+                const appMeta = await parseAppMeta(appIdOrPath as AppPath<Platform>);
+                if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appIdOrPath}"`);
                 return appMeta;
             })();
 
@@ -531,7 +529,7 @@ export async function startAnalysis<
 
             const installApp = () => {
                 if (appIdProvided) throw new Error('Installing apps by ID is not supported.');
-                return platform.installApp(appIdOrPath);
+                return platform.installApp(appIdOrPath as AppPath<Platform>);
             };
             const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
