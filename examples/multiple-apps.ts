@@ -32,7 +32,7 @@ import { pause, startAnalysis } from '../src/index';
         const appAnalysis = await analysis.startAppAnalysis(path.join(apkFolder, apkFile));
 
         await analysis.resetDevice();
-        await analysis.ensureTrackingDomainResolution();
+        // await analysis.ensureTrackingDomainResolution();
 
         await appAnalysis.installApp();
         await appAnalysis.setAppPermissions();

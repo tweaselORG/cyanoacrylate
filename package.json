@@ -56,6 +56,7 @@
     "dependencies": {
         "@types/har-format": "^1.2.10",
         "appstraction": "^0.2.0",
+        "autopy": "^1.0.0",
         "cross-fetch": "^3.1.5",
         "ctrlc-windows": "^2.1.0",
         "execa": "^7.0.0",
