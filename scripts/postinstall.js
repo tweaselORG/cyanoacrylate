@@ -1,5 +1,5 @@
-import { setupPythonDependencies } from './common/setup.js';
+import { ensurePythonDependencies } from './common/python.js';
 
 (async () => {
-    await setupPythonDependencies();
+    await ensurePythonDependencies({ updateMitmproxyAddons: true });
 })();

@@ -3,7 +3,6 @@ import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { readFile } from 'fs/promises';
-import globalCacheDir from 'global-cache-dir';
 import type { Har } from 'har-format';
 import { parse as parseIni, stringify as stringifyIni } from 'js-ini';
 import { homedir } from 'os';
@@ -11,7 +10,7 @@ import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
-import { ensurePythonDependencies } from '../scripts/common/setup';
+import { ensurePythonDependencies } from '../scripts/common/python';
 import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
 
 /** A capability supported by this library. */
@@ -289,11 +288,7 @@ export async function startAnalysis<
 >(
     analysisOptions: AnalysisOptions<Platform, RunTarget, Capabilities>
 ): Promise<Analysis<Platform, RunTarget, Capabilities>> {
-    await ensurePythonDependencies();
-
-    const cacheDir = await globalCacheDir('cyanoacrylate');
-    const venvPath = join(cacheDir, 'venv', process.platform === 'win32' ? 'Scripts' : 'bin');
-    process.env['PATH'] = `${venvPath}${process.platform === 'win32' ? ';' : ':'}${process.env['PATH']}`;
+    const { python, mitmproxyAddonsDir } = await ensurePythonDependencies({ updateMitmproxyAddons: false });
 
     const platformOptions = {
         platform: analysisOptions.platform,
@@ -327,9 +322,9 @@ export async function startAnalysis<
         const mitmproxyOptions = [
             '--quiet', // We cannot reliably read the mitmproxy stdout anyway, so we suppress it. (See: https://github.com/tweaselORG/cyanoacrylate/issues/5)
             '-s',
-            join(cacheDir, 'mitmproxy-addons/ipcEventsAddon.py'),
+            join(mitmproxyAddonsDir, 'ipcEventsAddon.py'),
             '-s',
-            join(cacheDir, 'mitmproxy-addons/har_dump.py'),
+            join(mitmproxyAddonsDir, 'har_dump.py'),
             '--set',
             `hardump=${harOutputPath}`,
             '--set',
@@ -338,7 +333,7 @@ export async function startAnalysis<
         if (analysisOptions.platform === 'android') mitmproxyOptions.push('--mode', 'wireguard');
 
         mitmproxyState = {
-            proc: execa('mitmdump', mitmproxyOptions),
+            proc: python('mitmdump', mitmproxyOptions),
             harOutputPath,
         };
 
