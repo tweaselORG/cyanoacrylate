@@ -1,6 +1,7 @@
 import { ctrlc } from 'ctrlc-windows';
 import dns from 'dns';
 import type { ExecaChildProcess } from 'execa';
+import { access } from 'fs/promises';
 import timeout from 'p-timeout';
 import { promisify } from 'util';
 
@@ -140,3 +141,12 @@ export const awaitProcessClose = (proc: ExecaChildProcess<string>) =>
     new Promise<true>((res) => {
         proc.on('close', () => res(true));
     });
+
+export const fileExists = async (path: string) => {
+    try {
+        await access(path);
+        return true;
+    } catch {
+        return false;
+    }
+};
