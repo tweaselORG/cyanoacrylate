@@ -11,7 +11,7 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, killProcess } from './util';
+import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess } from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -68,7 +68,7 @@ export type Analysis<
      * Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on
      * the object when you are done with the app to clean up and retrieve the analysis data.
      *
-     * @param appPath The path to the app to analyze.
+     * @param appIdOrPath The ID of or path to the app to analyze.
      * @param options An object with the following optional options:
      *
      *   - `resetApp`: Whether to reset (i.e. uninstall and then install) the app before starting the analysis (default:
@@ -79,7 +79,7 @@ export type Analysis<
      * @returns An object to control the analysis of the specified app.
      */
     startAppAnalysis: (
-        appPath: Platform extends 'android' ? string | string[] : string,
+        appIdOrPath: Platform extends 'android' ? string | string[] : string,
         options?: { resetApp?: boolean; noSigint?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /**
@@ -119,7 +119,8 @@ export type AppAnalysis<
     app: App;
 
     /**
-     * Install the specified app.
+     * Install the specified app. This is only available if the app analysis was started with an app path, but not if it
+     * was started with an app ID.
      *
      * @see {@link PlatformApi}
      */
@@ -501,21 +502,37 @@ export async function startAnalysis<
                 await timeout(platform.resetDevice(snapshotName), { milliseconds: 5 * 60 * 1000 });
             });
         },
-        startAppAnalysis: async (appPath, options) => {
-            if (typeof appPath !== 'string' && analysisOptions.platform !== 'android')
-                throw Error('Could not install app: Split app files are only supported on Android.');
+        startAppAnalysis: async (appIdOrPath, options) => {
+            const appIdProvided = typeof appIdOrPath === 'string' && !(await fileExists(appIdOrPath));
 
-            // This might not be the main APK, but we don‘t care because we should get the same meta information out of all the APKs
-            const appPathMain = typeof appPath === 'string' ? appPath : appPath[0] ?? '';
-            const appMeta = await parseAppMeta(appPathMain);
-            if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
+            if (typeof appIdOrPath !== 'string' && analysisOptions.platform !== 'android')
+                throw new Error('Could not install app: Split app files are only supported on Android.');
+
+            const appMeta = await (async () => {
+                if (appIdProvided) {
+                    if (!(await platform.isAppInstalled(appIdOrPath)))
+                        throw new Error(
+                            `Could not start analysis: "${appIdOrPath}" is not installed but you only provided an app ID.`
+                        );
+                    return { id: appIdOrPath };
+                }
+
+                // This might not be the main APK, but we don‘t care because we should get the same meta information out of all the APKs
+                const appPathMain = typeof appIdOrPath === 'string' ? appIdOrPath : appIdOrPath[0] ?? '';
+                const appMeta = await parseAppMeta(appPathMain);
+                if (!appMeta) throw new Error(`Could not start analysis with invalid app: "${appPathMain}"`);
+                return appMeta;
+            })();
 
             const res: AppAnalysisResult = {
                 app: appMeta,
                 traffic: {},
             };
 
-            const installApp = () => platform.installApp(appPath);
+            const installApp = () => {
+                if (appIdProvided) throw new Error('Installing apps by ID is not supported.');
+                return platform.installApp(appIdOrPath);
+            };
             const uninstallApp = () => platform.uninstallApp(appMeta.id);
 
             let inProgressTrafficCollectionName: string | undefined;
