@@ -1531,6 +1531,22 @@ andromatic@^1.0.0:
     semver "^7.5.0"
     yargs "^17.7.2"
 
+andromatic@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/andromatic/-/andromatic-1.1.0.tgz#55d8feb895f806553796aff261adb28f973b1fef"
+  integrity sha512-hy0cZ/Yc/IFOcR6OFcvYcCKVUTMh3Dr7FLear/LQFEhkA7OZhprxmwikRtkzpAZF+aGfdTkB++VmTV9k2om5AQ==
+  dependencies:
+    cross-fetch "^3.1.5"
+    decompress "^4.2.1"
+    execa "^7.1.1"
+    find-java-home "^2.0.0"
+    fs-extra "^11.1.1"
+    global-cache-dir "^4.4.0"
+    globby "^13.1.4"
+    node-java-connector "^1.1.1"
+    semver "^7.5.0"
+    yargs "^17.7.2"
+
 ansi-escapes@^4.3.0:
   version "4.3.2"
   resolved "https://registry.yarnpkg.com/ansi-escapes/-/ansi-escapes-4.3.2.tgz#6b2291d1db7d98b6521d5f1efa42d0f3a9feb65e"
