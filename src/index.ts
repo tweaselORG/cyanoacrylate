@@ -1,7 +1,6 @@
 import type { AppPath, PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
-import { execa } from 'execa';
 import { readFile } from 'fs/promises';
 import type { Har } from 'har-format';
 import { parse as parseIni, stringify as stringifyIni } from 'js-ini';
@@ -11,7 +10,7 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess } from './util';
+import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, startEmulator } from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -460,13 +459,13 @@ export async function startAnalysis<
                     | undefined;
                 const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
                 if (emulatorName) {
-                    const cmdArgs = ['-avd', emulatorName, '-no-boot-anim'];
+                    const cmdArgs = ['-no-boot-anim'];
                     if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
                     if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
                     if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
 
                     // eslint-disable-next-line require-atomic-updates
-                    emulatorProcess = execa('emulator', cmdArgs);
+                    emulatorProcess = (await startEmulator(emulatorName, cmdArgs))();
                     await platform.waitForDevice(150);
                 }
             }

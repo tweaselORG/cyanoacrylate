@@ -1,6 +1,8 @@
+import { ensureSdkmanager, getAndroidDevToolPath } from 'andromatic';
 import { ctrlc } from 'ctrlc-windows';
 import dns from 'dns';
 import type { ExecaChildProcess } from 'execa';
+import { execa } from 'execa';
 import { access } from 'fs/promises';
 import timeout from 'p-timeout';
 import { promisify } from 'util';
@@ -149,4 +151,13 @@ export const fileExists = async (path: string) => {
     } catch {
         return false;
     }
+};
+
+// We can't use `runAndroidDevTool` for this because that can only give you the process if you `await` it, which we
+// don't want.
+export const startEmulator = async (name: string, args: string[]) => {
+    const { env } = await ensureSdkmanager();
+    const toolPath = await getAndroidDevToolPath('emulator');
+
+    return () => execa(toolPath, ['-avd', name, ...args], { env });
 };
