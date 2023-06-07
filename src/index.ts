@@ -467,7 +467,7 @@ export async function startAnalysis<
 
                     // eslint-disable-next-line require-atomic-updates
                     emulatorProcess = execa('emulator', cmdArgs);
-                    await platform.waitForDevice();
+                    await platform.waitForDevice(150);
                 }
             }
 
