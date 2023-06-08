@@ -56,8 +56,8 @@
     "dependencies": {
         "@types/har-format": "^1.2.10",
         "andromatic": "^1.1.0",
-        "appstraction": "^0.4.1",
-        "autopy": "^1.0.0",
+        "appstraction": "^0.4.2",
+        "autopy": "^1.1.1",
         "cross-fetch": "^3.1.5",
         "ctrlc-windows": "^2.1.0",
         "execa": "^7.0.0",
