@@ -185,7 +185,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:362
+node_modules/appstraction/dist/index.d.ts:363
 
 ___
 
@@ -204,7 +204,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:364
+node_modules/appstraction/dist/index.d.ts:365
 
 ___
 
