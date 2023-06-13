@@ -16,7 +16,7 @@ import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProc
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
     ? 'frida' | 'certificate-pinning-bypass'
     : Platform extends 'ios'
-    ? never
+    ? 'certificate-pinning-bypass'
     : never;
 
 /** Metadata about an app. */
@@ -39,7 +39,7 @@ export type TrafficCollectionOptions = { mode: 'all-apps' } | { mode: 'allowlist
 export type Analysis<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
-    Capabilities extends SupportedCapability<'android' | 'ios'>[]
+    Capabilities extends SupportedCapability<Platform>[]
 > = {
     /** A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). */
     platform: PlatformApi<Platform, RunTarget, Capabilities>;
@@ -112,7 +112,7 @@ export type Analysis<
 export type AppAnalysis<
     Platform extends SupportedPlatform,
     RunTarget extends SupportedRunTarget<Platform>,
-    Capabilities extends SupportedCapability<'android' | 'ios'>[]
+    Capabilities extends SupportedCapability<Platform>[]
 > = {
     /** The app's metadata. */
     app: App;
@@ -236,10 +236,17 @@ export type RunTargetOptions = {
         emulator: never;
         /** The options for the iOS physical device run target. */
         device: {
-            /** The password of the root user on the device, defaults to `alpine` if not set. */
-            rootPw?: string;
-            /** The device's IP address. */
-            ip: string;
+            /**
+             * The username to use when logging into the device. Make sure the user is set up for login via SSH. If the
+             * `mobile` user is chosen, all commands are prepended with sudo. Defaults to `mobile`
+             */
+            username?: 'mobile' | 'root';
+            /** The password of the user to log into the device, defaults to `alpine` if not set. */
+            password?: string;
+            /** The device's IP address. If none is given, a connection via USB port forwarding is attempted. */
+            ip?: string;
+            /** The port where the SSH server is running on the device. Defaults to 22. */
+            port?: number;
             /** The IP address of the host running the proxy to set up on the device. */
             proxyIp: string;
         };
@@ -260,7 +267,7 @@ export type AnalysisOptions<
      * The capabilities you want. Depending on what you're trying to do, you may not need or want to root the device,
      * install Frida, etc. In this case, you can exclude those capabilities. This will influence which functions you can
      * run. For Android, the `wireguard` and `root` capabilities are preset in appstraction. For iOS, both the `ssh` and
-     * `frida` capibilities are preset, since they are required for the analysis to work.
+     * `frida` capabilities are preset, since they are required for the analysis to work.
      */
     capabilities: Capabilities;
 } & (RunTargetOptions[Platform][RunTarget] extends object
@@ -297,7 +304,7 @@ export async function startAnalysis<
             analysisOptions.platform === 'android'
                 ? [...analysisOptions.capabilities, 'wireguard', 'root']
                 : analysisOptions.platform === 'ios'
-                ? ['ssh', 'frida']
+                ? [...analysisOptions.capabilities, 'ssh', 'frida']
                 : analysisOptions.capabilities,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         targetOptions: analysisOptions.targetOptions as any,
@@ -535,12 +542,6 @@ export async function startAnalysis<
 
             let inProgressTrafficCollectionName: string | undefined;
 
-            const cleanUpAppAnalysis = async () => {
-                const internal = platform._internal as Exclude<(typeof platform)['_internal'], never>;
-                if (internal && 'objectionProcesses' in internal)
-                    internal.objectionProcesses?.forEach((proc) => killProcess(proc));
-            };
-
             if (options?.resetApp) {
                 await uninstallApp();
                 await installApp();
@@ -549,7 +550,6 @@ export async function startAnalysis<
             if (options?.noSigint !== true) {
                 process.removeAllListeners('SIGINT');
                 process.on('SIGINT', async () => {
-                    await cleanUpAppAnalysis();
                     process.exit();
                 });
             }
@@ -578,7 +578,6 @@ export async function startAnalysis<
                 stop: async (stopOptions) => {
                     if (stopOptions?.uninstallApp) await uninstallApp();
 
-                    await cleanUpAppAnalysis();
                     if (options?.noSigint !== true) process.removeAllListeners('SIGINT');
 
                     return res;
