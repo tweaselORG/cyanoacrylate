@@ -13,18 +13,18 @@ The current features include:
 
 ## Installation  
 
-You can install cyanoacrylate using yarn or npm:
+You can install cyanoacrylate using yarn or npm (*since we install many dependencies, this process might take up to 5 minutes*):
 
 ```sh
 yarn add cyanoacrylate
 # or `npm i cyanoacrylate`
 ```
 
-Furthermore, you need to install some dependencies on the host machine and prepare your target device/emulator to allow for traffic inspection.
+Furthermore, you might need to install some dependencies on the host machine and prepare your target device/emulator to allow for traffic inspection.
 
 ### Host dependencies
 
-To use cyanoacrylate, you need a working Python installation, with a version greater than 3.8. The `postinstall` script of this package will setup a venv and install all Python dependencies you need (`mitmproxy`, `objection`, and `frida-tools`). You only need to install all the other [host dependencies for appstraction](https://github.com/tweaselORG/appstraction#host-dependencies-for-android) for your use cases. Take a look at the README and follow the instructions to install those.
+Since we install most of the needed host dependencies during when you add the package to your project, im many cases, you won’t need any additional dependencies. If you want to work with physical Android or iOS devices, some steps might be necessary, depending on your OS. You can find out what to do [in the host dependencies for appstraction](https://github.com/tweaselORG/appstraction#host-dependencies-for-android). Take a look at the README and follow the instructions to set those up.
 
 ## Device preparation
 

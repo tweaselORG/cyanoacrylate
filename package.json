@@ -56,7 +56,7 @@
     "dependencies": {
         "@types/har-format": "^1.2.10",
         "andromatic": "^1.1.1",
-        "appstraction": "^0.4.3",
+        "appstraction": "^1.0.0",
         "autopy": "^1.1.1",
         "cross-fetch": "^3.1.5",
         "ctrlc-windows": "^2.1.0",
@@ -84,5 +84,8 @@
         "typedoc": "0.23.25",
         "typedoc-plugin-markdown": "3.14.0",
         "typescript": "4.9.5"
+    },
+    "engines": {
+        "node": ">=18.0.0"
     }
 }

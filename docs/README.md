@@ -46,7 +46,7 @@ Functions that can be used to instrument the device and analyze apps.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
-| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<`Platform`\>[] |
 
 #### Type declaration
 
@@ -83,7 +83,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:250](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L250)
+[src/index.ts:257](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L257)
 
 ___
 
@@ -95,7 +95,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:46
+node_modules/appstraction/dist/index.d.ts:68
 
 ___
 
@@ -130,7 +130,7 @@ Functions that can be used to control an app analysis.
 | :------ | :------ |
 | `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
 | `RunTarget` | extends [`SupportedRunTarget`](README.md#supportedruntarget)<`Platform`\> |
-| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<``"android"`` \| ``"ios"``\>[] |
+| `Capabilities` | extends [`SupportedCapability`](README.md#supportedcapability)<`Platform`\>[] |
 
 #### Type declaration
 
@@ -185,7 +185,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:363
+node_modules/appstraction/dist/index.d.ts:415
 
 ___
 
@@ -204,7 +204,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:365
+node_modules/appstraction/dist/index.d.ts:417
 
 ___
 
@@ -216,7 +216,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:50
+node_modules/appstraction/dist/index.d.ts:72
 
 ___
 
@@ -248,6 +248,7 @@ Functions that are available for the platforms.
 | `installApp` | (`appPath`: `AppPath`<`Platform`\>, `obbPaths?`: `Platform` extends ``"android"`` ? `ObbInstallSpec`[] : `never`) => `Promise`<`void`\> | Install the app at the given path. |
 | `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
+| `listApps` | (`options?`: { `includeSystem?`: `boolean`  }) => `Promise`<`string`[]\> | Get a list of the app IDs of all installed apps. |
 | `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
 | `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
@@ -264,7 +265,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:73
+node_modules/appstraction/dist/index.d.ts:95
 
 ___
 
@@ -287,11 +288,13 @@ The options for a specific platform/run target combination.
 | `android.emulator.startEmulatorOptions.emulatorName?` | `string` | The name of the emulator to start. |
 | `android.emulator.startEmulatorOptions.ephemeral?` | `boolean` | Whether to discard all changes when exiting the emulator (default: `true`). |
 | `android.emulator.startEmulatorOptions.headless?` | `boolean` | Whether to start the emulator in headless mode (default: `false`). |
-| `ios` | { `device`: { `ip`: `string` ; `proxyIp`: `string` ; `rootPw?`: `string`  } ; `emulator`: `never`  } | The options for the iOS platform. |
-| `ios.device` | { `ip`: `string` ; `proxyIp`: `string` ; `rootPw?`: `string`  } | The options for the iOS physical device run target. |
-| `ios.device.ip` | `string` | The device's IP address. |
+| `ios` | { `device`: { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } ; `emulator`: `never`  } | The options for the iOS platform. |
+| `ios.device` | { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } | The options for the iOS physical device run target. |
+| `ios.device.ip?` | `string` | The device's IP address. If none is given, a connection via USB port forwarding is attempted. |
+| `ios.device.password?` | `string` | The password of the user to log into the device, defaults to `alpine` if not set. |
+| `ios.device.port?` | `number` | The port where the SSH server is running on the device. Defaults to 22. |
 | `ios.device.proxyIp` | `string` | The IP address of the host running the proxy to set up on the device. |
-| `ios.device.rootPw?` | `string` | The password of the root user on the device, defaults to `alpine` if not set. |
+| `ios.device.username?` | ``"mobile"`` \| ``"root"`` | The username to use when logging into the device. Make sure the user is set up for login via SSH. If the `mobile` user is chosen, all commands are prepended with sudo. Defaults to `mobile` |
 | `ios.emulator` | `never` | The options for the iOS emulator run target. |
 
 #### Defined in
@@ -302,7 +305,7 @@ ___
 
 ### SupportedCapability
 
-Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? `never` : `never`
+Ƭ **SupportedCapability**<`Platform`\>: `Platform` extends ``"android"`` ? ``"frida"`` \| ``"certificate-pinning-bypass"`` : `Platform` extends ``"ios"`` ? ``"certificate-pinning-bypass"`` : `never`
 
 A capability supported by this library.
 
@@ -326,7 +329,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:52
+node_modules/appstraction/dist/index.d.ts:74
 
 ___
 
@@ -344,7 +347,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:54
+node_modules/appstraction/dist/index.d.ts:76
 
 ___
 
@@ -372,7 +375,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:44
+node_modules/appstraction/dist/index.d.ts:66
 
 ___
 
@@ -384,7 +387,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:48
+node_modules/appstraction/dist/index.d.ts:70
 
 ## Functions
 
@@ -406,7 +409,7 @@ Pause for a given duration.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:17
+node_modules/appstraction/dist/index.d.ts:18
 
 ___
 
@@ -439,4 +442,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:284](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L284)
+[src/index.ts:291](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L291)

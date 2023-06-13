@@ -1523,22 +1523,6 @@ amdefine@>=0.0.4:
   resolved "https://registry.yarnpkg.com/amdefine/-/amdefine-1.0.1.tgz#4a5282ac164729e93619bcfd3ad151f817ce91f5"
   integrity sha512-S2Hw0TtNkMJhIabBwIojKL9YHO5T0n5eNqWJ7Lrlel/zDbftQpxpapi8tZs3X1HWa+u+QeydGmzzNU0m09+Rcg==
 
-andromatic@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/andromatic/-/andromatic-1.0.0.tgz#138e5f46cbcd0cefd1e52b34568bbf99d59f1590"
-  integrity sha512-Gk0wimaBdDq4fahBA0STqBvDMrL+mjxh3a7ax70j4Tk7qUwXwSNFJ7wnXw32R7uIJggPHT+I70d9sK6ATfsJvw==
-  dependencies:
-    cross-fetch "^3.1.5"
-    decompress "^4.2.1"
-    execa "^7.1.1"
-    find-java-home "^2.0.0"
-    fs-extra "^11.1.1"
-    global-cache-dir "^4.4.0"
-    globby "^13.1.4"
-    node-java-connector "^1.1.1"
-    semver "^7.5.0"
-    yargs "^17.7.2"
-
 andromatic@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/andromatic/-/andromatic-1.1.1.tgz#9fcdb1ff4159c5c36f60730f1311dc7933a41a52"
@@ -1601,13 +1585,13 @@ ap@~0.2.0:
   resolved "https://registry.yarnpkg.com/ap/-/ap-0.2.0.tgz#ae0942600b29912f0d2b14ec60c45e8f330b6110"
   integrity sha512-ImdvquIuBSVpWRWhB441UjvTcZqic1RL+lTQaUKGdGEp1aiTvt/phAvY8Vvs32qya5FJBI8U+tzNBYzFDQY/lQ==
 
-appstraction@^0.4.3:
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/appstraction/-/appstraction-0.4.3.tgz#be52bdd5840bbcedcec50fbd44f74f4c67e6b4d5"
-  integrity sha512-xvw6s1FTY1gWBfX/JTWZg+19jBT+j+DdCZuOoTr/Wyra7itmnwKdyZsyqT3uNwCnaROltOEKMvdr7se0TlLQ4g==
+appstraction@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/appstraction/-/appstraction-1.0.0.tgz#76d2fcbb5e5b9ab3e3c3922e2dba393ccbf8d446"
+  integrity sha512-kqPFRCM59vRHJO3DWBkR3Vm4C9BYLXwENqfUapii7Wb5VBdfB+dgVqtzGL3LVV4f3QK8rNdVlhYMDG0QBVq2EA==
   dependencies:
     "@napi-rs/lzma" "^1.1.2"
-    andromatic "^1.0.0"
+    andromatic "^1.1.1"
     autopy "^1.1.1"
     cross-fetch "^3.1.5"
     execa "^6.1.0"
@@ -1617,6 +1601,7 @@ appstraction@^0.4.3:
     ipa-extract-info "^1.2.6"
     node-ssh "^13.1.0"
     p-retry "^5.1.2"
+    p-timeout "^6.1.2"
     pkijs "^3.0.14"
     semver "^7.3.8"
     tempy "^3.0.0"
@@ -2946,14 +2931,6 @@ find-java-home@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/find-java-home/-/find-java-home-1.2.2.tgz#8c5d82df57e48840da6625f61619026e4edafb0a"
   integrity sha512-rN2LcQa+YDwfnPT0TQgn015eYqJkn3h3G/uVX5oOD2Ge7gKOuoJrntAJO4BiGb+K6lo6Mb+xJdoqbfzqaC75gw==
-  dependencies:
-    which "~1.0.5"
-    winreg "~1.2.2"
-
-find-java-home@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/find-java-home/-/find-java-home-2.0.0.tgz#9073a14df6f74b951f4f7c2af88cf005bc059737"
-  integrity sha512-m4Cf5WM5Y9UupofsLgcJuY5oFXVfVnfHx43pg3HJoVdtY2PN4Wfs7ex9svf7W7eLTP+6wmyBToaqGOCffHBHVA==
   dependencies:
     which "~1.0.5"
     winreg "~1.2.2"
@@ -4587,6 +4564,11 @@ p-timeout@^6.1.1:
   version "6.1.1"
   resolved "https://registry.yarnpkg.com/p-timeout/-/p-timeout-6.1.1.tgz#bcee5e37d730f5474d973b6ff226751a1a5e6ff1"
   integrity sha512-yqz2Wi4fiFRpMmK0L2pGAU49naSUaP23fFIQL2Y6YT+qDGPoFwpvgQM/wzc6F8JoenUkIlAFa4Ql7NguXBxI7w==
+
+p-timeout@^6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/p-timeout/-/p-timeout-6.1.2.tgz#22b8d8a78abf5e103030211c5fc6dee1166a6aa5"
+  integrity sha512-UbD77BuZ9Bc9aABo74gfXhNvzC9Tx7SxtHSh1fxvx3jTLLYvmVhiQZZrJzqqU0jKbN32kb5VOKiLEQI/3bIjgQ==
 
 parcel@2.8.3:
   version "2.8.3"
