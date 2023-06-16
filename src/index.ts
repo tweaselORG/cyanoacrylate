@@ -10,7 +10,16 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, startEmulator } from './util';
+import type { MitmproxyEvent } from './util';
+import {
+    awaitMitmproxyEvent,
+    awaitProcessClose,
+    dnsLookup,
+    fileExists,
+    killProcess,
+    onMitmproxyEvent,
+    startEmulator,
+} from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -204,6 +213,12 @@ export type AppAnalysisResult = {
      * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
      */
     traffic: Record<string, Har>;
+    /**
+     * The mitmproxy events that were observed during the traffic collection. Note that this is not a stable API.
+     *
+     * @internal
+     */
+    mitmproxyEvents: MitmproxyEvent[];
 };
 
 /** The options for a specific platform/run target combination. */
@@ -314,7 +329,9 @@ export async function startAnalysis<
 
     let emulatorProcess: ExecaChildProcess | undefined;
     let trafficCollectionInProgress = false;
-    let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
+    let mitmproxyState:
+        | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string; events: MitmproxyEvent[] }
+        | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
         if (trafficCollectionInProgress)
@@ -342,7 +359,11 @@ export async function startAnalysis<
         mitmproxyState = {
             proc: python('mitmdump', mitmproxyOptions),
             harOutputPath,
+            events: [],
         };
+        onMitmproxyEvent(mitmproxyState.proc, (msg) => {
+            mitmproxyState?.events.push(msg);
+        });
 
         const mitmproxyPromises: Promise<unknown>[] = [
             awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
@@ -532,6 +553,7 @@ export async function startAnalysis<
             const res: AppAnalysisResult = {
                 app: appMeta,
                 traffic: {},
+                mitmproxyEvents: [],
             };
 
             const installApp = () => {
@@ -570,6 +592,7 @@ export async function startAnalysis<
                 stopTrafficCollection: async () => {
                     if (!inProgressTrafficCollectionName) throw new Error('No traffic collection is running.');
 
+                    if (mitmproxyState?.events) res.mitmproxyEvents = mitmproxyState?.events;
                     const har = await stopTrafficCollection();
                     res.traffic[inProgressTrafficCollectionName] = har;
                     inProgressTrafficCollectionName = undefined;
@@ -606,3 +629,12 @@ export type {
     SupportedPlatform,
     SupportedRunTarget,
 } from 'appstraction';
+export type {
+    MitmproxyCertificate,
+    MitmproxyClient,
+    MitmproxyConnection,
+    MitmproxyEvent,
+    MitmproxyServer,
+    MitmproxyServerSpec,
+    MitmproxyTlsData,
+} from './util';

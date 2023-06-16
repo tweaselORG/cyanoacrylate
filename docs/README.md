@@ -15,6 +15,13 @@ cyanoacrylate
 - [DeviceAttribute](README.md#deviceattribute)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
 - [IosPermission](README.md#iospermission)
+- [MitmproxyCertificate](README.md#mitmproxycertificate)
+- [MitmproxyClient](README.md#mitmproxyclient)
+- [MitmproxyConnection](README.md#mitmproxyconnection)
+- [MitmproxyEvent](README.md#mitmproxyevent)
+- [MitmproxyServer](README.md#mitmproxyserver)
+- [MitmproxyServerSpec](README.md#mitmproxyserverspec)
+- [MitmproxyTlsData](README.md#mitmproxytlsdata)
 - [PlatformApi](README.md#platformapi)
 - [RunTargetOptions](README.md#runtargetoptions)
 - [SupportedCapability](README.md#supportedcapability)
@@ -63,7 +70,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:39](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L39)
+[src/index.ts:48](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L48)
 
 ___
 
@@ -83,7 +90,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:257](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L257)
+[src/index.ts:272](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L272)
 
 ___
 
@@ -95,7 +102,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:68
+node_modules/appstraction/dist/index.d.ts:46
 
 ___
 
@@ -114,7 +121,7 @@ Metadata about an app.
 
 #### Defined in
 
-[src/index.ts:23](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L23)
+[src/index.ts:32](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L32)
 
 ___
 
@@ -148,7 +155,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:112](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L112)
+[src/index.ts:121](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L121)
 
 ___
 
@@ -163,11 +170,12 @@ The result of an app analysis.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `app` | [`App`](README.md#app) | The app's metadata. |
+| `mitmproxyEvents` | [`MitmproxyEvent`](README.md#mitmproxyevent)[] | The mitmproxy events that were observed during the traffic collection. Note that this is not a stable API. |
 | `traffic` | `Record`<`string`, `Har`\> | The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR format (https://w3c.github.io/web-performance/specs/HAR/Overview.html). |
 
 #### Defined in
 
-[src/index.ts:199](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L199)
+[src/index.ts:208](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L208)
 
 ___
 
@@ -185,7 +193,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:415
+node_modules/appstraction/dist/index.d.ts:363
 
 ___
 
@@ -204,7 +212,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:417
+node_modules/appstraction/dist/index.d.ts:365
 
 ___
 
@@ -216,7 +224,176 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:72
+node_modules/appstraction/dist/index.d.ts:50
+
+___
+
+### MitmproxyCertificate
+
+Ƭ **MitmproxyCertificate**: `Object`
+
+A mitmproxy certificate object representing a TLS certificate.
+
+**`See`**
+
+https://docs.mitmproxy.org/stable/api/mitmproxy/certs.html#Cert
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `altnames` | `string`[] | The certificate's alternate names (`SubjectAlternativeName`). |
+| `cn` | `string` \| ``null`` | The certificate's common name. |
+| `issuer` | [`string`, `string`][] | The issuer information of the certificate, as an array of key-value pairs. **`Example`** ```ts [ ['C', 'US'], ['O', 'DigiCert Inc'], ['OU', 'www.digicert.com'], ['CN', 'GeoTrust TLS RSA CA G1'], ]; ``` |
+| `keyinfo` | [`string`, `number`] | The key information of the certificate, consisting of the algorithm and the bit size. **`Example`** ```ts ['RSA', 2048]; ``` |
+| `notafter` | `number` | The timestamp when the certificate expires. |
+| `notbefore` | `number` | The timestamp when the certificate becomes valid. |
+| `organization` | `string` \| ``null`` | The organization name of the certificate owner. |
+| `serial` | `number` | The certificate's serial number. |
+| `subject` | [`string`, `string`][] | The subject information of the certificate, as an array of key-value pairs. **`Example`** ```ts [ ['C', 'US'], ['O', 'DigiCert Inc'], ['OU', 'www.digicert.com'], ['CN', 'GeoTrust TLS RSA CA G1'], ]; ``` |
+
+#### Defined in
+
+[src/util.ts:15](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L15)
+
+___
+
+### MitmproxyClient
+
+Ƭ **MitmproxyClient**: [`MitmproxyConnection`](README.md#mitmproxyconnection) & { `mitmCertificate`: [`MitmproxyCertificate`](README.md#mitmproxycertificate) \| ``null`` ; `proxyMode`: `string`  }
+
+A mitmproxy client object, represents a connection between a client and mitmproxy.
+
+**`See`**
+
+https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Client
+
+#### Defined in
+
+[src/util.ts:146](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L146)
+
+___
+
+### MitmproxyConnection
+
+Ƭ **MitmproxyConnection**: `Object`
+
+A mitmproxy connection object.
+
+**`See`**
+
+https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Connection
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `certificateList` | [`MitmproxyCertificate`](README.md#mitmproxycertificate)[] | The TLS certificate list as sent by the peer. The first certificate is the end-entity certificate. |
+| `cipherName` | `string` | The active cipher name as returned by OpenSSL's `SSL_CIPHER_get_name`. |
+| `ciphersClientToProxy` | `string`[] | Ciphers accepted by the proxy server on this connection. |
+| `connected` | `boolean` | `true` if MitmproxyConnection.state is `OPEN`, `false` otherwise. |
+| `error` | `string` \| ``null`` | A string describing a general error with connections to this address. The purpose of this property is to signal that new connections to the particular endpoint should not be attempted, for example because it uses an untrusted TLS certificate. Regular (unexpected) disconnects do not set the error property. This property is only reused per client connection. |
+| `id` | `string` | The connection's unique ID. |
+| `peername` | [`string`, `number`] \| ``null`` | The remote's `[ip, port]` tuple for this connection. |
+| `sni` | `string` \| ``null`` | The Server Name Indication (SNI) sent in the ClientHello. |
+| `sockname` | [`string`, `number`] \| ``null`` | The local's `[ip, port]` tuple for this connection. |
+| `state` | ``"CLOSED"`` \| ``"CAN_READ"`` \| ``"CAN_WRITE"`` \| ``"OPEN"`` | The connection's state. |
+| `timestampEnd` | `number` \| ``null`` | Timestamp of when the connection has been closed. |
+| `timestampStart` | `number` \| ``null`` | Timestamp of when the TCP SYN was received (client) or sent (server). |
+| `timestampTlsSetup` | `number` \| ``null`` | Timestamp of when the TLS handshake has been completed successfully. |
+| `tls` | `boolean` | `true` if TLS should be established, `false` otherwise. Note that this property only describes if a connection should eventually be protected using TLS. To check if TLS has already been established, use MitmproxyConnection.tlsEstablished. |
+| `tlsEstablished` | `boolean` | `true` if TLS has been established, `false` otherwise. |
+| `tlsVersion` | `string` \| ``null`` | The active TLS version. |
+| `transportProtocol` | ``"tcp"`` \| ``"udp"`` | The connection's protocol. |
+
+#### Defined in
+
+[src/util.ts:75](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L75)
+
+___
+
+### MitmproxyEvent
+
+Ƭ **MitmproxyEvent**: { `status`: ``"running"`` \| ``"done"``  } \| { `context`: { `address`: [`string`, `number`] ; `client`: [`MitmproxyClient`](README.md#mitmproxyclient)  } ; `status`: ``"clientConnected"`` \| ``"clientDisconnected"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) & { `error`: `string` \| ``null``  } ; `status`: ``"tlsFailed"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) ; `status`: ``"tlsEstablished"``  } \| { `servers`: [`MitmproxyServerSpec`](README.md#mitmproxyserverspec)<``"wireguard"`` \| ``"regular"`` \| `string`\>[] ; `status`: ``"proxyChanged"``  }
+
+The events sent by the mitmproxy IPC events addon.
+
+#### Defined in
+
+[src/util.ts:168](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L168)
+
+___
+
+### MitmproxyServer
+
+Ƭ **MitmproxyServer**: [`MitmproxyConnection`](README.md#mitmproxyconnection) & { `address`: [`string`, `number`] \| ``null`` ; `timestampTcpSetup`: `number` \| ``null`` ; `via`: [``"http"`` \| ``"https"`` \| ``"tls"`` \| ``"dtls"`` \| ``"tcp"`` \| ``"udp"`` \| ``"dns"``, `string` \| `number`] \| ``null``  }
+
+A mitmproxy server object, representing a connection between mitmproxy and an upstream server.
+
+**`See`**
+
+https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Server
+
+#### Defined in
+
+[src/util.ts:158](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L158)
+
+___
+
+### MitmproxyServerSpec
+
+Ƭ **MitmproxyServerSpec**<`Type`\>: `Object`
+
+The JSON serialization of the python class mitmproxy.proxy.mode_servers.ServerInstance. See
+https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Type` | extends ``"wireguard"`` \| ``"regular"`` \| `string` |
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `description` | `string` |
+| `full_spec` | `string` |
+| `is_running` | `boolean` |
+| `last_exception` | `string` \| ``null`` |
+| `listen_addrs` | [`string`, `number`][] |
+| `type` | `Type` |
+| `wireguard_conf` | `Type` extends ``"wireguard"`` ? `string` \| ``null`` : `never` |
+
+#### Defined in
+
+[src/util.ts:214](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L214)
+
+___
+
+### MitmproxyTlsData
+
+Ƭ **MitmproxyTlsData**: `Object`
+
+Mitmproxy's event data for the `tls_start_client`, `tls_start_server`, and `tls_handshake` event hooks.
+
+**`See`**
+
+https://docs.mitmproxy.org/stable/api/mitmproxy/tls.html#TlsData
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `client` | [`MitmproxyClient`](README.md#mitmproxyclient) | The client connection. |
+| `clientAddress` | `string` | Convenience alias for the client address in human-readable format (`<address>:<port>`). |
+| `isDtls` | `boolean` | If set to `true`, indicates that it is a DTLS event. |
+| `server` | [`MitmproxyServer`](README.md#mitmproxyserver) | The server connection. |
+| `serverAddress` | `string` | Convenience alias for the server address in human-readable format (SNI hostname or `<address>:<port>`). |
+
+#### Defined in
+
+[src/util.ts:127](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L127)
 
 ___
 
@@ -248,7 +425,6 @@ Functions that are available for the platforms.
 | `installApp` | (`appPath`: `AppPath`<`Platform`\>, `obbPaths?`: `Platform` extends ``"android"`` ? `ObbInstallSpec`[] : `never`) => `Promise`<`void`\> | Install the app at the given path. |
 | `installCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Install the certificate authority with the given path as a trusted CA on the device. This allows you to intercept and modify traffic from apps on the device. On Android, this installs the CA as a system CA. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and installs the CA there. This means that the changes are not persistent across reboots. On iOS, the CA is installed permanently as a root certificate in the Certificate Trust Store. It persists across reboots.\ **Currently, you need to manually trust any CA at least once on the device, CAs can be added but not automatically marked as trusted (see: https://github.com/tweaselORG/appstraction/issues/44#issuecomment-1466151197).** Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `isAppInstalled` | (`appId`: `string`) => `Promise`<`boolean`\> | Check whether the app with the given app ID is installed. |
-| `listApps` | (`options?`: { `includeSystem?`: `boolean`  }) => `Promise`<`string`[]\> | Get a list of the app IDs of all installed apps. |
 | `removeCertificateAuthority` | (`path`: `string`) => `Promise`<`void`\> | Remove the certificate authority with the given path from the trusted CAs on the device. On Android, this works for system CAs, including those pre-installed with the OS. As this is normally not possible on Android 10 and above, it overlays the `/system/etc/security/cacerts` directory with a tmpfs and removes the CA there. This means that the changes are not persistent across reboots. On iOS, this only works for CAs in the Certificate Trust Store. It does not work for pre-installed OS CAs. The changes are persistent across reboots. Requires the `root` capability on Android, and the `ssh` capability on iOS. |
 | `resetDevice` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Reset the device to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to reset to. |
 | `setAppBackgroundBatteryUsage` | `Platform` extends ``"android"`` ? (`appId`: `string`, `state`: ``"unrestricted"`` \| ``"optimized"`` \| ``"restricted"``) => `Promise`<`void`\> : `never` | Configure whether the app's background battery usage should be restricted. Currently only supported on Android. **`Param`** The app ID of the app to configure the background battery usage settings for. **`Param`** The state to set the background battery usage to. On Android, the possible values are: - `unrestricted`: "Allow battery usage in background without restrictions. May use more battery." - `optimized`: "Optimize based on your usage. Recommended for most apps." (default after installation) - `restricted`: "Restrict battery usage while in background. Apps may not work as expected. Notifications may be delayed." |
@@ -265,7 +441,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:95
+node_modules/appstraction/dist/index.d.ts:73
 
 ___
 
@@ -299,7 +475,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:211](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L211)
+[src/index.ts:226](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L226)
 
 ___
 
@@ -317,7 +493,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:16](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L16)
+[src/index.ts:25](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L25)
 
 ___
 
@@ -329,7 +505,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:74
+node_modules/appstraction/dist/index.d.ts:52
 
 ___
 
@@ -347,7 +523,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:76
+node_modules/appstraction/dist/index.d.ts:54
 
 ___
 
@@ -363,7 +539,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:37](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L37)
+[src/index.ts:46](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L46)
 
 ## Variables
 
@@ -375,7 +551,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:66
+node_modules/appstraction/dist/index.d.ts:44
 
 ___
 
@@ -387,7 +563,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:70
+node_modules/appstraction/dist/index.d.ts:48
 
 ## Functions
 
@@ -409,7 +585,7 @@ Pause for a given duration.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:18
+node_modules/appstraction/dist/index.d.ts:17
 
 ___
 
@@ -442,4 +618,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:291](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L291)
+[src/index.ts:306](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L306)
