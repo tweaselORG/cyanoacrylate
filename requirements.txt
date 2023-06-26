@@ -1,3 +1,0 @@
-mitmproxy==9.0.1
-objection==1.11.0
-frida-tools==12.1.1
