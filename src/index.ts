@@ -10,7 +10,16 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, startEmulator } from './util';
+import type { MitmproxyEvent } from './util';
+import {
+    awaitMitmproxyEvent,
+    awaitProcessClose,
+    dnsLookup,
+    fileExists,
+    killProcess,
+    onMitmproxyEvent,
+    startEmulator,
+} from './util';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -204,6 +213,12 @@ export type AppAnalysisResult = {
      * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
      */
     traffic: Record<string, Har>;
+    /**
+     * The mitmproxy events that were observed during the traffic collection. Note that this is not a stable API.
+     *
+     * @internal
+     */
+    mitmproxyEvents: MitmproxyEvent[];
 };
 
 /** The options for a specific platform/run target combination. */
@@ -314,7 +329,9 @@ export async function startAnalysis<
 
     let emulatorProcess: ExecaChildProcess | undefined;
     let trafficCollectionInProgress = false;
-    let mitmproxyState: { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string } | undefined;
+    let mitmproxyState:
+        | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
+        | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
         if (trafficCollectionInProgress)
@@ -342,7 +359,11 @@ export async function startAnalysis<
         mitmproxyState = {
             proc: python('mitmdump', mitmproxyOptions),
             harOutputPath,
+            events: [],
         };
+        onMitmproxyEvent(mitmproxyState.proc, (msg) => {
+            mitmproxyState?.events.push(msg);
+        });
 
         const mitmproxyPromises: Promise<unknown>[] = [
             awaitMitmproxyEvent(mitmproxyState.proc, (msg) => msg.status === 'running'),
@@ -354,15 +375,15 @@ export async function startAnalysis<
                     mitmproxyState.proc,
                     (msg) =>
                         msg.status === 'proxyChanged' &&
-                        msg.servers.some((server) => server.type === 'wireguard' && server.is_running)
+                        msg.context.servers.some((server) => server.type === 'wireguard' && server.isRunning)
                 )
                     .then((msg) => {
                         if (msg.status !== 'proxyChanged') throw new Error('Unreachable.'); // This will never be reached but we use it as a typeguard
-                        for (const server of msg.servers) {
-                            if ((server.type !== 'wireguard' && !server.wireguard_conf) || mitmproxyState === undefined)
+                        for (const server of msg.context.servers) {
+                            if ((server.type !== 'wireguard' && !server.wireguardConf) || mitmproxyState === undefined)
                                 continue;
-                            mitmproxyState.wireguardConf = server.wireguard_conf;
-                            return server.wireguard_conf;
+                            mitmproxyState.wireguardConf = server.wireguardConf;
+                            return server.wireguardConf;
                         }
                         throw new Error('Failed to start mitmproxy: No WireGuard proxy is running.');
                     })
@@ -396,12 +417,15 @@ export async function startAnalysis<
                     mitmproxyState.proc,
                     (msg) =>
                         msg.status === 'proxyChanged' &&
-                        msg.servers.some((server) => server.type === 'regular' && server.is_running)
+                        msg.context.servers.some((server) => server.type === 'regular' && server.isRunning)
                 ).then((msg) =>
                     (platform as unknown as PlatformApi<'ios', 'device', Array<'ssh'>, 'ssh'>).setProxy({
                         host: (analysisOptions as unknown as AnalysisOptions<'ios', 'device', never>).targetOptions
                             .proxyIp,
-                        port: msg.status === 'proxyChanged' ? msg.servers[0]?.listen_addrs?.[0]?.[1] || 8080 : 8080,
+                        port:
+                            msg.status === 'proxyChanged'
+                                ? msg.context.servers[0]?.listenAddrs?.[0]?.[1] || 8080
+                                : 8080,
                     })
                 )
             );
@@ -532,6 +556,7 @@ export async function startAnalysis<
             const res: AppAnalysisResult = {
                 app: appMeta,
                 traffic: {},
+                mitmproxyEvents: [],
             };
 
             const installApp = () => {
@@ -570,6 +595,7 @@ export async function startAnalysis<
                 stopTrafficCollection: async () => {
                     if (!inProgressTrafficCollectionName) throw new Error('No traffic collection is running.');
 
+                    if (mitmproxyState?.events) res.mitmproxyEvents = mitmproxyState?.events;
                     const har = await stopTrafficCollection();
                     res.traffic[inProgressTrafficCollectionName] = har;
                     inProgressTrafficCollectionName = undefined;
@@ -606,3 +632,12 @@ export type {
     SupportedPlatform,
     SupportedRunTarget,
 } from 'appstraction';
+export type {
+    MitmproxyCertificate,
+    MitmproxyClient,
+    MitmproxyConnection,
+    MitmproxyEvent,
+    MitmproxyServer,
+    MitmproxyServerSpec,
+    MitmproxyTlsData,
+} from './util';
