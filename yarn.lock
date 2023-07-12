@@ -40,12 +40,12 @@
     prettier-plugin-organize-imports "^3.2.1"
     prettier-plugin-packagejson "^2.3.0"
 
-"@baltpeter/tsconfig@2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@baltpeter/tsconfig/-/tsconfig-2.0.0.tgz#2a7b21053472a204b4253518d9f897b84eafb4f6"
-  integrity sha512-pR9cZG/r6L6F057jMG0ez6Ii6hizoH70R1O0ki8kwEQbBhJvXiYjboxW+pbJUgJ6bZRRivdMOhscHEx0TV500g==
+"@baltpeter/tsconfig@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@baltpeter/tsconfig/-/tsconfig-3.0.0.tgz#acb03c83d562d83de8fa6d72c785dcb0898487ad"
+  integrity sha512-am0zhQ8Jl3zVEM7bMIum6efTtSmTHnRL27T6XNgmPVQv4w2ZEPV8gwvTJoWyJxG7iOk6M92McFJnjjulKGvpgA==
   dependencies:
-    "@tsconfig/strictest" "^1.0.2"
+    "@tsconfig/strictest" "^2.0.0"
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -1271,10 +1271,10 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.3.tgz#472eaab5f15c1ffdd7f8628bd4c4f753995ec79e"
   integrity sha512-yOlFc+7UtL/89t2ZhjPvvB/DeAr3r+Dq58IgzsFkOAvVC6NMJXmCGjbptdXdR9qsX7pKcTL+s87FtYREi2dEEQ==
 
-"@tsconfig/strictest@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@tsconfig/strictest/-/strictest-1.0.2.tgz#aff98cd714dbd1722c9229eed2dcf3fc6fd30fd9"
-  integrity sha512-IRKlC8cnP7zMz1SDBjyIVyPapkEGWLZ6wkF6Z8T+xU80P9sO5uGXlIUvtzjx+7ehPJRWxkB6CeIDwUfyqNtYkQ==
+"@tsconfig/strictest@^2.0.0":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@tsconfig/strictest/-/strictest-2.0.1.tgz#c8f42be4d2c8a8fcef0afd482b730c1d55733776"
+  integrity sha512-7JHHCbyCsGUxLd0pDbp24yz3zjxw2t673W5oAP6HCEdr/UUhaRhYd3SSnUsGCk+VnPVJVA4mXROzbhI+nyIk+w==
 
 "@types/aws-lambda@^8.10.83":
   version "8.10.115"
