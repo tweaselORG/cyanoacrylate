@@ -100,9 +100,9 @@ export type MitmproxyConnection = {
     /** The TLS certificate list as sent by the peer. The first certificate is the end-entity certificate. */
     certificateList: MitmproxyCertificate[];
     /** The active cipher name as returned by OpenSSL's `SSL_CIPHER_get_name`. */
-    cipherName: string;
+    cipher: string;
     /** Ciphers accepted by the proxy server on this connection. */
-    ciphersClientToProxy: string[];
+    cipherList: string[];
     /** The active TLS version. */
     tlsVersion: string | null;
     /** The Server Name Indication (SNI) sent in the ClientHello. */
@@ -146,7 +146,10 @@ export type MitmproxyTlsData = {
 export type MitmproxyClient = MitmproxyConnection & {
     /** The certificate used by mitmproxy to establish TLS with the client. */
     mitmCertificate: MitmproxyCertificate | null;
-    /** The proxy server type this client has been connecting to. */
+    /**
+     * The spec for the proxy server this client has been connecting to. This is the full proxy mode spec as entered by
+     * the user.
+     */
     proxyMode: string;
 };
 
@@ -164,13 +167,28 @@ export type MitmproxyServer = MitmproxyConnection & {
     via: ['http' | 'https' | 'tls' | 'dtls' | 'tcp' | 'udp' | 'dns', string | number] | null;
 };
 
+/**
+ * A `mitmproxy.proxy.mode_servers.ServerInstance` object.
+ *
+ * @see https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
+ */
+export type MitmproxyServerSpec<Type extends 'wireguard' | 'regular' | string> = {
+    type: Type;
+    description: string;
+    fullSpec: string;
+    isRunning: boolean;
+    lastException: string | null;
+    listenAddrs: Array<[string, number]>;
+    wireguardConf: Type extends 'wireguard' ? string | null : null;
+};
+
 /** The events sent by the mitmproxy IPC events addon. */
 export type MitmproxyEvent =
     | {
           /**
            * Status of the mitmproxy instance:
            *
-           * - `runnning`: mitmproxy just started.
+           * - `running`: mitmproxy just started.
            * - `done`: mitmproxy shut down.
            * - `tlsFailed`: A TLS error occurred.
            * - `tlsEstablished`: TLS has been successfully established.
@@ -203,23 +221,12 @@ export type MitmproxyEvent =
       }
     | {
           status: 'proxyChanged';
-          /** An array of server specs which contains all the running servers, one for each mode. */
-          servers: MitmproxyServerSpec<'wireguard' | 'regular' | string>[];
+          context: {
+              isRunning: boolean;
+              /** An array of server specs which contains all the running servers, one for each mode. */
+              servers: MitmproxyServerSpec<'wireguard' | 'regular' | string>[];
+          };
       };
-
-/**
- * The JSON serialization of the python class mitmproxy.proxy.mode_servers.ServerInstance. See
- * https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
- */
-export type MitmproxyServerSpec<Type extends 'wireguard' | 'regular' | string> = {
-    type: Type;
-    description: string;
-    full_spec: string;
-    is_running: boolean;
-    last_exception: string | null;
-    listen_addrs: Array<[string, number]>;
-    wireguard_conf: Type extends 'wireguard' ? string | null : never;
-};
 
 /** A promise wrapper around `dns.lookup`. */
 export const dnsLookup = promisify(dns.lookup);

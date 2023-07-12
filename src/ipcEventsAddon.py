@@ -16,6 +16,8 @@ from mitmproxy.utils import human
 from mitmproxy.tls import TlsData
 from mitmproxy.connection import Connection, Client, Server
 from mitmproxy.certs import Cert
+from mitmproxy.addons.proxyserver import Proxyserver
+from mitmproxy.proxy.mode_servers import WireGuardServerInstance
 
 class IpcEventRelay:
     def load(self, loader):
@@ -55,7 +57,7 @@ class IpcEventRelay:
         self._sendIpcMessage({"status": "tlsEstablished", "context": tlsDataToDict(data)})
 
     def server_changed(self):
-        self._sendIpcMessage({"status": "proxyChanged", "servers":  [s.to_json() for s in self.proxyserver.servers]})
+        self._sendIpcMessage({"status": "proxyChanged", "context": proxyserverToDict(self.proxyserver)})
 
 # See: https://docs.mitmproxy.org/stable/api/mitmproxy/certs.html#Cert
 def certToDict(cert: Cert | None):
@@ -133,5 +135,24 @@ def tlsDataToDict(data: TlsData | None):
         "server": serverToDict(data.context.server),
         "isDtls": data.is_dtls
     }
+
+# See: https://github.com/mitmproxy/mitmproxy/blob/c34c86dd906befe0b999a4344caded587637fe01/mitmproxy/proxy/mode_servers.py#L172-L180,
+# https://github.com/mitmproxy/mitmproxy/blob/c34c86dd906befe0b999a4344caded587637fe01/mitmproxy/proxy/mode_servers.py#L434
+def proxyserverToDict(proxyserver: Proxyserver | None):
+    if proxyserver is None:
+        return None
+    return {
+        "isRunning": proxyserver.is_running,
+        "servers": [{
+            "type": s.mode.type_name,
+            "description": s.mode.description,
+            "fullSpec": s.mode.full_spec,
+            "isRunning": s.is_running,
+            "lastException": str(s.last_exception) if s.last_exception else None,
+            "listenAddrs": s.listen_addrs,
+            "wireguardConf": s.client_conf() if isinstance(s, WireGuardServerInstance) else None,
+        } for s in proxyserver.servers]
+    }
+
 
 addons = [IpcEventRelay()]

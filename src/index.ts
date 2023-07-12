@@ -330,7 +330,7 @@ export async function startAnalysis<
     let emulatorProcess: ExecaChildProcess | undefined;
     let trafficCollectionInProgress = false;
     let mitmproxyState:
-        | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string; events: MitmproxyEvent[] }
+        | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
         | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
@@ -375,15 +375,15 @@ export async function startAnalysis<
                     mitmproxyState.proc,
                     (msg) =>
                         msg.status === 'proxyChanged' &&
-                        msg.servers.some((server) => server.type === 'wireguard' && server.is_running)
+                        msg.context.servers.some((server) => server.type === 'wireguard' && server.isRunning)
                 )
                     .then((msg) => {
                         if (msg.status !== 'proxyChanged') throw new Error('Unreachable.'); // This will never be reached but we use it as a typeguard
-                        for (const server of msg.servers) {
-                            if ((server.type !== 'wireguard' && !server.wireguard_conf) || mitmproxyState === undefined)
+                        for (const server of msg.context.servers) {
+                            if ((server.type !== 'wireguard' && !server.wireguardConf) || mitmproxyState === undefined)
                                 continue;
-                            mitmproxyState.wireguardConf = server.wireguard_conf;
-                            return server.wireguard_conf;
+                            mitmproxyState.wireguardConf = server.wireguardConf;
+                            return server.wireguardConf;
                         }
                         throw new Error('Failed to start mitmproxy: No WireGuard proxy is running.');
                     })
@@ -417,12 +417,15 @@ export async function startAnalysis<
                     mitmproxyState.proc,
                     (msg) =>
                         msg.status === 'proxyChanged' &&
-                        msg.servers.some((server) => server.type === 'regular' && server.is_running)
+                        msg.context.servers.some((server) => server.type === 'regular' && server.isRunning)
                 ).then((msg) =>
                     (platform as unknown as PlatformApi<'ios', 'device', Array<'ssh'>, 'ssh'>).setProxy({
                         host: (analysisOptions as unknown as AnalysisOptions<'ios', 'device', never>).targetOptions
                             .proxyIp,
-                        port: msg.status === 'proxyChanged' ? msg.servers[0]?.listen_addrs?.[0]?.[1] || 8080 : 8080,
+                        port:
+                            msg.status === 'proxyChanged'
+                                ? msg.context.servers[0]?.listenAddrs?.[0]?.[1] || 8080
+                                : 8080,
                     })
                 )
             );

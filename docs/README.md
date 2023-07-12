@@ -289,8 +289,8 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Connection
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `certificateList` | [`MitmproxyCertificate`](README.md#mitmproxycertificate)[] | The TLS certificate list as sent by the peer. The first certificate is the end-entity certificate. |
-| `cipherName` | `string` | The active cipher name as returned by OpenSSL's `SSL_CIPHER_get_name`. |
-| `ciphersClientToProxy` | `string`[] | Ciphers accepted by the proxy server on this connection. |
+| `cipher` | `string` | The active cipher name as returned by OpenSSL's `SSL_CIPHER_get_name`. |
+| `cipherList` | `string`[] | Ciphers accepted by the proxy server on this connection. |
 | `connected` | `boolean` | `true` if MitmproxyConnection.state is `OPEN`, `false` otherwise. |
 | `error` | `string` \| ``null`` | A string describing a general error with connections to this address. The purpose of this property is to signal that new connections to the particular endpoint should not be attempted, for example because it uses an untrusted TLS certificate. Regular (unexpected) disconnects do not set the error property. This property is only reused per client connection. |
 | `id` | `string` | The connection's unique ID. |
@@ -314,13 +314,13 @@ ___
 
 ### MitmproxyEvent
 
-Ƭ **MitmproxyEvent**: { `status`: ``"running"`` \| ``"done"``  } \| { `context`: { `address`: [`string`, `number`] ; `client`: [`MitmproxyClient`](README.md#mitmproxyclient)  } ; `status`: ``"clientConnected"`` \| ``"clientDisconnected"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) & { `error`: `string` \| ``null``  } ; `status`: ``"tlsFailed"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) ; `status`: ``"tlsEstablished"``  } \| { `servers`: [`MitmproxyServerSpec`](README.md#mitmproxyserverspec)<``"wireguard"`` \| ``"regular"`` \| `string`\>[] ; `status`: ``"proxyChanged"``  }
+Ƭ **MitmproxyEvent**: { `status`: ``"running"`` \| ``"done"``  } \| { `context`: { `address`: [`string`, `number`] ; `client`: [`MitmproxyClient`](README.md#mitmproxyclient)  } ; `status`: ``"clientConnected"`` \| ``"clientDisconnected"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) & { `error`: `string` \| ``null``  } ; `status`: ``"tlsFailed"``  } \| { `context`: [`MitmproxyTlsData`](README.md#mitmproxytlsdata) ; `status`: ``"tlsEstablished"``  } \| { `context`: { `isRunning`: `boolean` ; `servers`: [`MitmproxyServerSpec`](README.md#mitmproxyserverspec)<``"wireguard"`` \| ``"regular"`` \| `string`\>[]  } ; `status`: ``"proxyChanged"``  }
 
 The events sent by the mitmproxy IPC events addon.
 
 #### Defined in
 
-[src/util.ts:168](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L168)
+[src/util.ts:186](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L186)
 
 ___
 
@@ -336,7 +336,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Server
 
 #### Defined in
 
-[src/util.ts:158](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L158)
+[src/util.ts:161](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L161)
 
 ___
 
@@ -344,7 +344,10 @@ ___
 
 Ƭ **MitmproxyServerSpec**<`Type`\>: `Object`
 
-The JSON serialization of the python class mitmproxy.proxy.mode_servers.ServerInstance. See
+A `mitmproxy.proxy.mode_servers.ServerInstance` object.
+
+**`See`**
+
 https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795e93a/mitmproxy/proxy/mode_servers.py#L172.
 
 #### Type parameters
@@ -358,16 +361,16 @@ https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795
 | Name | Type |
 | :------ | :------ |
 | `description` | `string` |
-| `full_spec` | `string` |
-| `is_running` | `boolean` |
-| `last_exception` | `string` \| ``null`` |
-| `listen_addrs` | [`string`, `number`][] |
+| `fullSpec` | `string` |
+| `isRunning` | `boolean` |
+| `lastException` | `string` \| ``null`` |
+| `listenAddrs` | [`string`, `number`][] |
 | `type` | `Type` |
-| `wireguard_conf` | `Type` extends ``"wireguard"`` ? `string` \| ``null`` : `never` |
+| `wireguardConf` | `Type` extends ``"wireguard"`` ? `string` \| ``null`` : ``null`` |
 
 #### Defined in
 
-[src/util.ts:214](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L214)
+[src/util.ts:175](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L175)
 
 ___
 
