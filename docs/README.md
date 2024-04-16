@@ -70,7 +70,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:48](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L48)
+[src/index.ts:50](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L50)
 
 ___
 
@@ -90,7 +90,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:272](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L272)
+[src/index.ts:274](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L274)
 
 ___
 
@@ -121,7 +121,7 @@ Metadata about an app.
 
 #### Defined in
 
-[src/index.ts:32](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L32)
+[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
 
 ___
 
@@ -155,7 +155,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:121](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L121)
+[src/index.ts:123](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L123)
 
 ___
 
@@ -175,7 +175,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:208](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L208)
+[src/index.ts:210](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L210)
 
 ___
 
@@ -479,7 +479,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:226](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L226)
+[src/index.ts:228](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L228)
 
 ___
 
@@ -497,7 +497,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:25](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L25)
+[src/index.ts:27](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L27)
 
 ___
 
@@ -543,7 +543,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:46](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L46)
+[src/index.ts:48](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L48)
 
 ## Variables
 
@@ -622,4 +622,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:306](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L306)
+[src/index.ts:308](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L308)

@@ -339,7 +339,7 @@ export async function startAnalysis<
 
         trafficCollectionInProgress = true;
 
-        platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
+        await platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
         const harOutputPath = temporaryFile({ extension: 'har' });
 
