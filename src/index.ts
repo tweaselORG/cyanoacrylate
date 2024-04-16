@@ -400,7 +400,7 @@ export async function startAnalysis<
                                     'ExcludedApplications'
                                 ] = options.apps.join(', ');
 
-                            (
+                            return (
                                 platform as unknown as PlatformApi<
                                     'android',
                                     RunTarget,
@@ -409,6 +409,8 @@ export async function startAnalysis<
                                 >
                             ).setProxy(stringifyIni(parsedWireguardConf));
                         }
+
+                        return undefined;
                     })
             );
         else if (analysisOptions.platform === 'ios')

@@ -70,7 +70,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:50](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L50)
+[src/index.ts:48](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L48)
 
 ___
 
@@ -90,7 +90,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:274](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L274)
+[src/index.ts:272](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L272)
 
 ___
 
@@ -102,7 +102,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:68
+node_modules/appstraction/dist/index.d.ts:58
 
 ___
 
@@ -121,7 +121,7 @@ Metadata about an app.
 
 #### Defined in
 
-[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
+[src/index.ts:32](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L32)
 
 ___
 
@@ -155,7 +155,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:123](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L123)
+[src/index.ts:121](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L121)
 
 ___
 
@@ -175,13 +175,13 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:210](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L210)
+[src/index.ts:208](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L208)
 
 ___
 
 ### DeviceAttribute
 
-Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? `never` : `Platform` extends ``"ios"`` ? ``"idfv"`` : `never`
+Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? ``"apiLevel"`` \| ``"manufacturer"`` \| ``"model"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"`` : ``"idfv"`` \| ``"manufacturer"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"``
 
 A supported attribute for the `getDeviceAttribute()` function, depending on the platform.
 
@@ -193,7 +193,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:418
+node_modules/appstraction/dist/index.d.ts:444
 
 ___
 
@@ -212,7 +212,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:420
+node_modules/appstraction/dist/index.d.ts:446
 
 ___
 
@@ -224,7 +224,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:72
+node_modules/appstraction/dist/index.d.ts:62
 
 ___
 
@@ -421,7 +421,7 @@ Functions that are available for the platforms.
 | :------ | :------ | :------ |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
 | `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
-| `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given attribute of the device. Requires the `frida` capability on iOS. |
+| `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given device attribute. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
 | `getPrefs` | (`appId`: `string`) => `Promise`<`Record`<`string`, `unknown`\> \| `undefined`\> | Get the preferences (`SharedPreferences` on Android, `NSUserDefaults` on iOS) of the app with the given app ID. Requires the `frida` capability on Android and iOS. |
@@ -445,7 +445,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:95
+node_modules/appstraction/dist/index.d.ts:116
 
 ___
 
@@ -479,7 +479,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:228](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L228)
+[src/index.ts:226](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L226)
 
 ___
 
@@ -497,7 +497,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:27](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L27)
+[src/index.ts:25](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L25)
 
 ___
 
@@ -509,7 +509,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:74
+node_modules/appstraction/dist/index.d.ts:64
 
 ___
 
@@ -527,7 +527,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:76
+node_modules/appstraction/dist/index.d.ts:66
 
 ___
 
@@ -543,7 +543,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:48](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L48)
+[src/index.ts:46](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L46)
 
 ## Variables
 
@@ -555,7 +555,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:66
+node_modules/appstraction/dist/index.d.ts:56
 
 ___
 
@@ -567,7 +567,7 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:70
+node_modules/appstraction/dist/index.d.ts:60
 
 ## Functions
 
@@ -622,4 +622,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:308](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L308)
+[src/index.ts:306](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L306)
