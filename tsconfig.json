@@ -13,6 +13,7 @@
         "gitRevision": "main"
     },
     "compilerOptions": {
-        "module": "es2022"
+        "module": "es2022",
+        "resolveJsonModule": true
     }
 }

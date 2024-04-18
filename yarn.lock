@@ -1585,10 +1585,8 @@ ap@~0.2.0:
   resolved "https://registry.yarnpkg.com/ap/-/ap-0.2.0.tgz#ae0942600b29912f0d2b14ec60c45e8f330b6110"
   integrity sha512-ImdvquIuBSVpWRWhB441UjvTcZqic1RL+lTQaUKGdGEp1aiTvt/phAvY8Vvs32qya5FJBI8U+tzNBYzFDQY/lQ==
 
-appstraction@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/appstraction/-/appstraction-1.0.1.tgz#ceecc98c20d6ba95ce7dc11b46c61bc0b59fa528"
-  integrity sha512-4xeYYpCrXV9bW+92Oqfk25+7dRsqh4njvwgkIlQ657yoJuIeTJ7YDTLM/NBXEtpZBpJBOB3aM8BKgH4KFcUYfA==
+"appstraction@file:.yalc/appstraction":
+  version "1.0.0"
   dependencies:
     "@napi-rs/lzma" "^1.1.2"
     andromatic "^1.1.1"
@@ -1598,6 +1596,7 @@ appstraction@^1.0.1:
     file-type "^18.3.0"
     frida "^16.0.8"
     fs-extra "^11.1.0"
+    hasha "^6.0.0"
     ipa-extract-info "^1.2.6"
     node-ssh "^13.1.0"
     p-retry "^5.1.2"
@@ -3290,6 +3289,14 @@ has@^1.0.1, has@^1.0.3:
   integrity sha512-f2dvO0VU6Oej7RkWJGrehjbzMAjFp5/VKPp5tTpWIV4JHHZK1/BxbFRtf/siA2SWTe09caDmVtYYzWEIbBS4zw==
   dependencies:
     function-bind "^1.1.1"
+
+hasha@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/hasha/-/hasha-6.0.0.tgz#bdf1231ae40b406121c09c13705e5b38c1bb607c"
+  integrity sha512-MLydoyGp9QJcjlhE5lsLHXYpWayjjWqkavzju2ZWD2tYa1CgmML1K1gWAu22BLFa2eZ0OfvJ/DlfoVjaD54U2Q==
+  dependencies:
+    is-stream "^3.0.0"
+    type-fest "^4.7.1"
 
 htmlnano@^2.0.0:
   version "2.0.3"
@@ -5713,6 +5720,11 @@ type-fest@^2.12.2:
   version "2.19.0"
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-2.19.0.tgz#88068015bb33036a598b952e55e9311a60fd3a9b"
   integrity sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA==
+
+type-fest@^4.7.1:
+  version "4.17.0"
+  resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-4.17.0.tgz#4c1b2c2852d2a40ba8c0236d3afc6fc68229e5bf"
+  integrity sha512-9flrz1zkfLRH3jO3bLflmTxryzKMxVa7841VeMgBaNQGY6vH4RCcpN/sQLB7mQQYh1GZ5utT2deypMuCy4yicw==
 
 typed-array-length@^1.0.4:
   version "1.0.4"
