@@ -77,6 +77,67 @@ The following example collects the traffic for an app in the Android emulator. I
 
 Take a look at the [`examples/`](examples) folder for some more examples of how to use cyanoacrylate.
 
+## Additional metadata in exported HAR files
+
+The HAR files that cyanoacrylate produces contain additional metadata about the analysis. We use this metadata, for example, to generate technical reports and complaints using [ReportHAR](https://github.com/tweaselORG/ReportHAR).
+
+Here's an example of what such a HAR might look like (the actual requests in the `entries` field are omitted for brevity):
+
+```json5
+{
+    "log": {
+        "version": "1.2",
+        "creator": {
+            "name": "cyanoacrylate",
+            "version": "1.0.0"
+        },
+        "pages": [],
+        "entries": [
+            // [requests and responses omitted]
+        ],
+        "_tweasel": {
+            "startDate": "2024-04-19T08:52:48.077Z",
+            "endDate": "2024-04-19T08:52:59.214Z",
+            "options": {
+                "mode": "allowlist",
+                "apps": ["de.hafas.android.db"]
+            },
+            "device": {
+                "platform": "android",
+                "runTarget": "device",
+                "osVersion": "13",
+                "osBuild": "lineage_ocean-userdebug 13 TQ2A.230505.002 8c3345902f",
+                "manufacturer": "motorola",
+                "model": "moto g(7) power",
+                "modelCodeName": "ocean",
+                "architectures": "arm64-v8a,armeabi-v7a,armeabi"
+            },
+            "versions": {
+                "appstraction": "1.0.0",
+                "cyanoacrylate": "1.0.0",
+                "node": "v18.13.0",
+                "python": "3.11.3",
+                "mitmproxy": "9.0.1"
+            },
+            "apps": [
+                {
+                    "platform": "android",
+                    "id": "de.hafas.android.db",
+                    "name": "DB Navigator",
+                    "version": "21.12.p03.04",
+                    "versionCode": "211200007",
+                    "architectures": [],
+                    "md5": "4f4cf346a050ea23da0da60328a4dd10"
+                }
+            ],
+            "metaVersion": "1.0"
+        }
+    }
+}
+```
+
+See the [type definition](docs/README.md#tweaselharmetav1) for more details on which information is included.
+
 ## License
 
 This code is licensed under the MIT license, see the [`LICENSE`](LICENSE) file for details.

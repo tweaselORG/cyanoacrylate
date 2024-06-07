@@ -1,5 +1,13 @@
-import type { AppPath, PlatformApi, PlatformApiOptions, SupportedPlatform, SupportedRunTarget } from 'appstraction';
+import type {
+    AppMeta as App,
+    AppPath,
+    PlatformApi,
+    PlatformApiOptions,
+    SupportedPlatform,
+    SupportedRunTarget,
+} from 'appstraction';
 import { parseAppMeta, platformApi } from 'appstraction';
+import { version as appstractionVersion } from 'appstraction/package.json';
 import type { ExecaChildProcess } from 'execa';
 import { readFile } from 'fs/promises';
 import type { Har } from 'har-format';
@@ -9,6 +17,7 @@ import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
+import { version as cyanoacrylateVersion } from '../package.json';
 import { ensurePythonDependencies } from '../scripts/common/python';
 import type { MitmproxyEvent } from './util';
 import {
@@ -28,14 +37,60 @@ export type SupportedCapability<Platform extends SupportedPlatform> = Platform e
     ? 'certificate-pinning-bypass'
     : never;
 
-/** Metadata about an app. */
-export type App = {
-    /** The app's ID. */
-    id: string;
-    /** The app's version. */
-    version?: string;
+/** Metadata about the device the analysis was run on. */
+export type DeviceV1 = {
+    /** The device's operating system. */
+    platform: SupportedPlatform;
+    /** The type of device (emulator, physical device). */
+    runTarget: SupportedRunTarget<SupportedPlatform>;
+    /** The version of the OS. */
+    osVersion: string;
+    /** The build string of the OS. */
+    osBuild?: string;
+    /** The device's manufacturer. */
+    manufacturer?: string;
+    /** The device's model. */
+    model?: string;
+    /** The device's model code name. */
+    modelCodeName?: string;
+    /** Architectures/ABIs supported by the device. */
+    architectures: string;
+};
+/**
+ * A HAR file with additional tweasel metadata containing information about the analysis that the traffic was collected
+ * through.
+ */
+export type TweaselHar = Har & {
+    log: {
+        /** Metadata about the traffic collection. */
+        _tweasel: TweaselHarMetaV1;
+    };
+};
+/** Metadata about the traffic collection as included in a {@link TweaselHar}. */
+export type TweaselHarMetaV1 = {
+    /** The time and date at which the traffic collection was started. */
+    startDate: string;
+    /** The time and date at which the traffic collection was stopped. */
+    endDate: string;
+    /** The options that were used for the traffic collection. */
+    options: TrafficCollectionOptionsV1;
+    /** Details about the device that the analysis was run on. */
+    device: DeviceV1;
+    /** The versions of the dependencies used in the analysis. */
+    versions: Record<string, string>;
+    /**
+     * Details about the app(s) that was/were analyzed. Currently only populated if the traffic was recorded through an
+     * app analysis.
+     */
+    apps?: App[];
+    /**
+     * The version of the tweasel-specific metadata format. Currently, `1.0` is the only version. If the format is ever
+     * changed or extended in the future, this version will be incremented.
+     */
+    metaVersion: '1.0';
 };
 
+export type TrafficCollectionOptions = TrafficCollectionOptionsV1;
 /**
  * Options for a traffic collection that specifies which apps to collect traffic from.
  *
@@ -43,7 +98,8 @@ export type App = {
  * - `mode: 'allowlist'`: Collect traffic only from the apps with the app IDs in the `apps` array.
  * - `mode: 'denylist'`: Collect traffic from all apps except the apps with the app IDs in the `apps` array.
  */
-export type TrafficCollectionOptions = { mode: 'all-apps' } | { mode: 'allowlist' | 'denylist'; apps: string[] };
+export type TrafficCollectionOptionsV1 = { mode: 'all-apps' } | { mode: 'allowlist' | 'denylist'; apps: string[] };
+
 /** Functions that can be used to instrument the device and analyze apps. */
 export type Analysis<
     Platform extends SupportedPlatform,
@@ -112,7 +168,7 @@ export type Analysis<
      *
      * @returns The collected traffic in HAR format.
      */
-    stopTrafficCollection: () => Promise<Har>;
+    stopTrafficCollection: () => Promise<TweaselHar>;
     /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
     stop: () => Promise<void>;
 };
@@ -212,7 +268,7 @@ export type AppAnalysisResult = {
      * The collected traffic, accessible by the specified name. The traffic is available as a JSON object in the HAR
      * format (https://w3c.github.io/web-performance/specs/HAR/Overview.html).
      */
-    traffic: Record<string, Har>;
+    traffic: Record<string, TweaselHar>;
     /**
      * The mitmproxy events that were observed during the traffic collection. Note that this is not a stable API.
      *
@@ -327,17 +383,29 @@ export async function startAnalysis<
 
     const platform = platformApi(platformOptions);
 
+    let device: DeviceV1;
+    const versions = {
+        appstraction: appstractionVersion,
+        cyanoacrylate: cyanoacrylateVersion,
+        node: process.version,
+        python: await python('python', ['--version']).then(({ stdout }) => stdout.split(' ')[1] || ''),
+        mitmproxy: await python('mitmproxy', ['--version']).then(
+            ({ stdout }) => stdout.split('\n')[0]?.split(' ')[1] || ''
+        ),
+    };
+
     let emulatorProcess: ExecaChildProcess | undefined;
-    let trafficCollectionInProgress = false;
+    let trafficCollectionInProgress: { startDate: Date; options: TrafficCollectionOptions } | false = false;
     let mitmproxyState:
         | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
         | undefined;
 
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
-        if (trafficCollectionInProgress)
+        if (trafficCollectionInProgress !== false)
             throw new Error('Cannot start new traffic collection. A previous one is still running.');
 
-        trafficCollectionInProgress = true;
+        options = options ?? { mode: 'all-apps' };
+        trafficCollectionInProgress = { startDate: new Date(), options };
 
         await platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
@@ -439,8 +507,11 @@ export async function startAnalysis<
             throw e;
         });
     };
-    const stopTrafficCollection = async () => {
-        if (!mitmproxyState?.proc) throw new Error('No traffic collection is running.');
+    const stopTrafficCollection = async (): Promise<TweaselHar> => {
+        if (!mitmproxyState?.proc || !trafficCollectionInProgress) throw new Error('No traffic collection is running.');
+
+        const collectionMeta = trafficCollectionInProgress;
+        const endDate = new Date();
 
         const [har] = await Promise.all([
             awaitProcessClose(mitmproxyState.proc).then(async () => {
@@ -472,7 +543,24 @@ export async function startAnalysis<
             killProcess(mitmproxyState.proc),
         ]);
 
-        return har;
+        // We add custom metadata to the HAR file.
+        return {
+            log: {
+                ...har.log,
+                creator: {
+                    name: 'cyanoacrylate',
+                    version: cyanoacrylateVersion,
+                },
+                _tweasel: {
+                    startDate: collectionMeta.startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    options: collectionMeta.options,
+                    device,
+                    versions,
+                    metaVersion: '1.0',
+                },
+            },
+        };
     };
 
     return {
@@ -503,7 +591,22 @@ export async function startAnalysis<
                 }
             }
 
-            return platform.ensureDevice();
+            await platform.ensureDevice();
+
+            device = {
+                platform: analysisOptions.platform,
+                runTarget: analysisOptions.runTarget,
+                osVersion: await platform.getDeviceAttribute('osVersion'),
+                osBuild: await platform.getDeviceAttribute('osBuild'),
+                manufacturer: await platform.getDeviceAttribute('manufacturer'),
+                ...(platform.target.platform === 'android' && {
+                    model: await (
+                        platform as unknown as PlatformApi<'android', RunTarget, [], 'wireguard'>
+                    ).getDeviceAttribute('model'),
+                }),
+                modelCodeName: await platform.getDeviceAttribute('modelCodeName'),
+                architectures: await platform.getDeviceAttribute('architectures'),
+            };
         },
         ensureTrackingDomainResolution: async () => {
             const trackerDomains = ['doubleclick.net', 'graph.facebook.com', 'branch.io', 'app-measurement.com'];
@@ -547,7 +650,7 @@ export async function startAnalysis<
                         throw new Error(
                             `Could not start analysis: "${appIdOrPath}" is not installed but you only provided an app ID.`
                         );
-                    return { id: appIdOrPath };
+                    return { platform: platform.target.platform, id: appIdOrPath, architectures: [] };
                 }
 
                 const appMeta = await parseAppMeta(appIdOrPath as AppPath<Platform>);
@@ -597,8 +700,10 @@ export async function startAnalysis<
                 stopTrafficCollection: async () => {
                     if (!inProgressTrafficCollectionName) throw new Error('No traffic collection is running.');
 
-                    if (mitmproxyState?.events) res.mitmproxyEvents = mitmproxyState?.events;
                     const har = await stopTrafficCollection();
+                    har.log._tweasel.apps = [appMeta];
+
+                    if (mitmproxyState?.events) res.mitmproxyEvents = mitmproxyState?.events;
                     res.traffic[inProgressTrafficCollectionName] = har;
                     inProgressTrafficCollectionName = undefined;
                 },
@@ -643,3 +748,4 @@ export type {
     MitmproxyServerSpec,
     MitmproxyTlsData,
 } from './util';
+export type { App };
