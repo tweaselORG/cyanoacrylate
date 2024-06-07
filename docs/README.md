@@ -12,8 +12,8 @@ cyanoacrylate
 - [App](README.md#app)
 - [AppAnalysis](README.md#appanalysis)
 - [AppAnalysisResult](README.md#appanalysisresult)
-- [Device](README.md#device)
 - [DeviceAttribute](README.md#deviceattribute)
+- [DeviceV1](README.md#devicev1)
 - [GetDeviceAttributeOptions](README.md#getdeviceattributeoptions)
 - [IosPermission](README.md#iospermission)
 - [MitmproxyCertificate](README.md#mitmproxycertificate)
@@ -28,7 +28,7 @@ cyanoacrylate
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
-- [TrafficCollectionOptions](README.md#trafficcollectionoptions)
+- [TrafficCollectionOptionsV1](README.md#trafficcollectionoptionsv1)
 - [TweaselHar](README.md#tweaselhar)
 - [TweaselHarMetaV1](README.md#tweaselharmetav1)
 
@@ -67,13 +67,13 @@ Functions that can be used to instrument the device and analyze apps.
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
 | `startAppAnalysis` | (`appIdOrPath`: `string` \| `AppPath`<`Platform`\>, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
-| `startTrafficCollection` | (`options?`: `Platform` extends ``"android"`` ? [`TrafficCollectionOptions`](README.md#trafficcollectionoptions) : `never`) => `Promise`<`void`\> | Start collecting the device's traffic. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic collection to specific apps. Only one traffic collection can be active at a time. |
+| `startTrafficCollection` | (`options?`: `Platform` extends ``"android"`` ? `TrafficCollectionOptions` : `never`) => `Promise`<`void`\> | Start collecting the device's traffic. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic collection to specific apps. Only one traffic collection can be active at a time. |
 | `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
 | `stopTrafficCollection` | () => `Promise`<[`TweaselHar`](README.md#tweaselhar)\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
 
 #### Defined in
 
-[src/index.ts:102](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L102)
+[src/index.ts:104](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L104)
 
 ___
 
@@ -93,7 +93,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:326](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L326)
+[src/index.ts:328](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L328)
 
 ___
 
@@ -163,7 +163,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:175](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L175)
+[src/index.ts:177](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L177)
 
 ___
 
@@ -183,13 +183,31 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:262](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L262)
+[src/index.ts:264](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L264)
 
 ___
 
-### Device
+### DeviceAttribute
 
-Ƭ **Device**: `Object`
+Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? ``"apiLevel"`` \| ``"architectures"`` \| ``"manufacturer"`` \| ``"model"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"`` : ``"architectures"`` \| ``"idfv"`` \| ``"manufacturer"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"``
+
+A supported attribute for the `getDeviceAttribute()` function, depending on the platform.
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
+
+#### Defined in
+
+node_modules/appstraction/dist/index.d.ts:445
+
+___
+
+### DeviceV1
+
+Ƭ **DeviceV1**: `Object`
 
 Metadata about the device the analysis was run on.
 
@@ -209,24 +227,6 @@ Metadata about the device the analysis was run on.
 #### Defined in
 
 [src/index.ts:41](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L41)
-
-___
-
-### DeviceAttribute
-
-Ƭ **DeviceAttribute**<`Platform`\>: `Platform` extends ``"android"`` ? ``"apiLevel"`` \| ``"architectures"`` \| ``"manufacturer"`` \| ``"model"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"`` : ``"architectures"`` \| ``"idfv"`` \| ``"manufacturer"`` \| ``"modelCodeName"`` \| ``"name"`` \| ``"osBuild"`` \| ``"osVersion"``
-
-A supported attribute for the `getDeviceAttribute()` function, depending on the platform.
-
-#### Type parameters
-
-| Name | Type |
-| :------ | :------ |
-| `Platform` | extends [`SupportedPlatform`](README.md#supportedplatform) |
-
-#### Defined in
-
-node_modules/appstraction/dist/index.d.ts:445
 
 ___
 
@@ -512,7 +512,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:280](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L280)
+[src/index.ts:282](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L282)
 
 ___
 
@@ -564,9 +564,9 @@ node_modules/appstraction/dist/index.d.ts:66
 
 ___
 
-### TrafficCollectionOptions
+### TrafficCollectionOptionsV1
 
-Ƭ **TrafficCollectionOptions**: { `mode`: ``"all-apps"``  } \| { `apps`: `string`[] ; `mode`: ``"allowlist"`` \| ``"denylist"``  }
+Ƭ **TrafficCollectionOptionsV1**: { `mode`: ``"all-apps"``  } \| { `apps`: `string`[] ; `mode`: ``"allowlist"`` \| ``"denylist"``  }
 
 Options for a traffic collection that specifies which apps to collect traffic from.
 
@@ -576,7 +576,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:100](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L100)
+[src/index.ts:101](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L101)
 
 ___
 
@@ -604,10 +604,10 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `apps?` | [`App`](README.md#app)[] | Details about the app(s) that was/were analyzed. Currently only populated if the traffic was recorded through an app analysis. |
-| `device` | [`Device`](README.md#device) | Details about the device that the analysis was run on. |
+| `device` | [`DeviceV1`](README.md#devicev1) | Details about the device that the analysis was run on. |
 | `endDate` | `string` | The time and date at which the traffic collection was stopped. |
 | `metaVersion` | ``"1.0"`` | The version of the tweasel-specific metadata format. Currently, `1.0` is the only version. If the format is ever changed or extended in the future, this version will be incremented. |
-| `options` | [`TrafficCollectionOptions`](README.md#trafficcollectionoptions) | The options that were used for the traffic collection. |
+| `options` | [`TrafficCollectionOptionsV1`](README.md#trafficcollectionoptionsv1) | The options that were used for the traffic collection. |
 | `startDate` | `string` | The time and date at which the traffic collection was started. |
 | `versions` | `Record`<`string`, `string`\> | The versions of the dependencies used in the analysis. |
 
@@ -692,4 +692,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:360](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L360)
+[src/index.ts:362](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L362)

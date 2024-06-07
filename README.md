@@ -130,7 +130,7 @@ Here's an example of what such a HAR might look like (the actual requests in the
                     "md5": "4f4cf346a050ea23da0da60328a4dd10"
                 }
             ],
-            "metaVersion": 1
+            "metaVersion": "1.0"
         }
     }
 }

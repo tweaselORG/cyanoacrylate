@@ -38,7 +38,7 @@ export type SupportedCapability<Platform extends SupportedPlatform> = Platform e
     : never;
 
 /** Metadata about the device the analysis was run on. */
-export type Device = {
+export type DeviceV1 = {
     /** The device's operating system. */
     platform: SupportedPlatform;
     /** The type of device (emulator, physical device). */
@@ -73,9 +73,9 @@ export type TweaselHarMetaV1 = {
     /** The time and date at which the traffic collection was stopped. */
     endDate: string;
     /** The options that were used for the traffic collection. */
-    options: TrafficCollectionOptions;
+    options: TrafficCollectionOptionsV1;
     /** Details about the device that the analysis was run on. */
-    device: Device;
+    device: DeviceV1;
     /** The versions of the dependencies used in the analysis. */
     versions: Record<string, string>;
     /**
@@ -90,6 +90,7 @@ export type TweaselHarMetaV1 = {
     metaVersion: '1.0';
 };
 
+export type TrafficCollectionOptions = TrafficCollectionOptionsV1;
 /**
  * Options for a traffic collection that specifies which apps to collect traffic from.
  *
@@ -97,7 +98,8 @@ export type TweaselHarMetaV1 = {
  * - `mode: 'allowlist'`: Collect traffic only from the apps with the app IDs in the `apps` array.
  * - `mode: 'denylist'`: Collect traffic from all apps except the apps with the app IDs in the `apps` array.
  */
-export type TrafficCollectionOptions = { mode: 'all-apps' } | { mode: 'allowlist' | 'denylist'; apps: string[] };
+export type TrafficCollectionOptionsV1 = { mode: 'all-apps' } | { mode: 'allowlist' | 'denylist'; apps: string[] };
+
 /** Functions that can be used to instrument the device and analyze apps. */
 export type Analysis<
     Platform extends SupportedPlatform,
@@ -381,7 +383,7 @@ export async function startAnalysis<
 
     const platform = platformApi(platformOptions);
 
-    let device: Device;
+    let device: DeviceV1;
     const versions = {
         appstraction: appstractionVersion,
         cyanoacrylate: cyanoacrylateVersion,
