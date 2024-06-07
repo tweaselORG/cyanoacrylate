@@ -339,7 +339,7 @@ export async function startAnalysis<
 
         trafficCollectionInProgress = true;
 
-        platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
+        await platform.installCertificateAuthority(join(homedir(), '.mitmproxy/mitmproxy-ca-cert.pem'));
 
         const harOutputPath = temporaryFile({ extension: 'har' });
 
@@ -400,7 +400,7 @@ export async function startAnalysis<
                                     'ExcludedApplications'
                                 ] = options.apps.join(', ');
 
-                            (
+                            return (
                                 platform as unknown as PlatformApi<
                                     'android',
                                     RunTarget,
@@ -409,6 +409,8 @@ export async function startAnalysis<
                                 >
                             ).setProxy(stringifyIni(parsedWireguardConf));
                         }
+
+                        return undefined;
                     })
             );
         else if (analysisOptions.platform === 'ios')
