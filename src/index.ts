@@ -547,6 +547,11 @@ export async function startAnalysis<
         return {
             log: {
                 ...har.log,
+
+                // Hotfix for HAR files not loading in Chrome (see #45).
+                // TODO: This should be removed once we upgrade mitmproxy or switch away from it (#46).
+                pages: [],
+
                 creator: {
                     name: 'cyanoacrylate',
                     version: cyanoacrylateVersion,
