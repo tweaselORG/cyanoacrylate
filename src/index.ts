@@ -576,7 +576,7 @@ export async function startAnalysis<
 
             // Start the emulator if necessary and a name was provided.
             if (
-                !emulatorProcess &&
+                (!emulatorProcess || emulatorProcess.exitCode !== null) &&
                 analysisOptions.platform === 'android' &&
                 analysisOptions.runTarget === 'emulator'
             ) {
