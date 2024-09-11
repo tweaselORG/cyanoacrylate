@@ -1585,10 +1585,10 @@ ap@~0.2.0:
   resolved "https://registry.yarnpkg.com/ap/-/ap-0.2.0.tgz#ae0942600b29912f0d2b14ec60c45e8f330b6110"
   integrity sha512-ImdvquIuBSVpWRWhB441UjvTcZqic1RL+lTQaUKGdGEp1aiTvt/phAvY8Vvs32qya5FJBI8U+tzNBYzFDQY/lQ==
 
-appstraction@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/appstraction/-/appstraction-1.3.0.tgz#f448e580f8707bb19db53ec84b3291fe0a982bb0"
-  integrity sha512-BU17Kqtoz5jcZaPMEmQdgk/UlzO82Qfi8UomxF9SXNgrJZk77guohuzT7YxsfmNDipbj/E6GS1TPkgtwD0b8lg==
+appstraction@1.3.1:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/appstraction/-/appstraction-1.3.1.tgz#05208c5797add78e4a3eda52b2fe9b19f40f64de"
+  integrity sha512-yaevXwhVbyCnHwZs5CZXXUvT+SKR+bJrzvBPdRQgjbhUkcbJmTC0nRc9LyXvw23M+cZUROv/yxHP4K3r9WLoRA==
   dependencies:
     "@napi-rs/lzma" "^1.1.2"
     andromatic "^1.1.1"
