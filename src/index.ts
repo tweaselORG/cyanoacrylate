@@ -6,8 +6,7 @@ import type {
     SupportedPlatform,
     SupportedRunTarget,
 } from 'appstraction';
-import { parseAppMeta, platformApi } from 'appstraction';
-import { version as appstractionVersion } from 'appstraction/package.json';
+import { appstractionVersion, parseAppMeta, platformApi } from 'appstraction';
 import type { ExecaChildProcess } from 'execa';
 import { readFile } from 'fs/promises';
 import type { Har } from 'har-format';
@@ -17,7 +16,6 @@ import timeout, { TimeoutError } from 'p-timeout';
 import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
-import { version as cyanoacrylateVersion } from '../package.json';
 import { ensurePythonDependencies } from '../scripts/common/python';
 import type { MitmproxyEvent } from './util';
 import {
@@ -29,6 +27,7 @@ import {
     onMitmproxyEvent,
     startEmulator,
 } from './util';
+import { cyanoacrylateVersion } from './version.gen';
 
 /** A capability supported by this library. */
 export type SupportedCapability<Platform extends SupportedPlatform> = Platform extends 'android'
@@ -753,4 +752,5 @@ export type {
     MitmproxyServerSpec,
     MitmproxyTlsData,
 } from './util';
+export { cyanoacrylateVersion } from './version.gen';
 export type { App };

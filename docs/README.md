@@ -73,7 +73,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:104](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L104)
+[src/index.ts:103](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L103)
 
 ___
 
@@ -93,7 +93,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:328](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L328)
+[src/index.ts:327](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L327)
 
 ___
 
@@ -129,7 +129,7 @@ Metadata about an app, as returned by parseAppMeta.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:85
+node_modules/appstraction/dist/index.d.ts:86
 
 ___
 
@@ -163,7 +163,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:177](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L177)
+[src/index.ts:176](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L176)
 
 ___
 
@@ -183,7 +183,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:264](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L264)
+[src/index.ts:263](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L263)
 
 ___
 
@@ -201,7 +201,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:467
+node_modules/appstraction/dist/index.d.ts:468
 
 ___
 
@@ -226,7 +226,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:41](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L41)
+[src/index.ts:40](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L40)
 
 ___
 
@@ -245,7 +245,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:469
+node_modules/appstraction/dist/index.d.ts:470
 
 ___
 
@@ -481,7 +481,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:116
+node_modules/appstraction/dist/index.d.ts:117
 
 ___
 
@@ -515,7 +515,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:282](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L282)
+[src/index.ts:281](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L281)
 
 ___
 
@@ -533,7 +533,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
+[src/index.ts:33](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L33)
 
 ___
 
@@ -545,7 +545,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:64
+node_modules/appstraction/dist/index.d.ts:65
 
 ___
 
@@ -563,7 +563,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:66
+node_modules/appstraction/dist/index.d.ts:67
 
 ___
 
@@ -579,7 +579,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:101](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L101)
+[src/index.ts:100](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L100)
 
 ___
 
@@ -592,7 +592,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:63](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L63)
+[src/index.ts:62](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L62)
 
 ___
 
@@ -616,7 +616,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:70](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L70)
+[src/index.ts:69](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L69)
 
 ## Variables
 
@@ -695,4 +695,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:362](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L362)
+[src/index.ts:361](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L361)

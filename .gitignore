@@ -4,6 +4,8 @@ tmp.*
 *.tmp.*
 
 dist/
+.yalc/
+yalc.lock
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,macos,windows,visualstudiocode,jetbrains+all,sublimetext,node,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,macos,windows,visualstudiocode,jetbrains+all,sublimetext,node,python
