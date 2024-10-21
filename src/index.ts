@@ -293,6 +293,22 @@ export type RunTargetOptions = {
                 audio?: boolean;
                 /** Whether to discard all changes when exiting the emulator (default: `true`). */
                 ephemeral?: boolean;
+                /**
+                 * Options for hardware accelerations. These do not need to be set if everything works with the
+                 * defaults.
+                 */
+                hardwareAcceleration?: {
+                    /**
+                     * Sets the `-accel` option, see
+                     * https://developer.android.com/studio/run/emulator-commandline#common.
+                     */
+                    mode?: 'auto' | 'off' | 'on';
+                    /**
+                     * Sets the `-gpu` option, see
+                     * https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
+                     */
+                    gpuMode?: 'auto' | 'host' | 'swiftshader_indirect' | 'angle_indirect' | 'guest';
+                };
             };
             /** The name of a snapshot to use when resetting the emulator. */
             snapshotName?: string;
@@ -588,9 +604,17 @@ export async function startAnalysis<
                     if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
                     if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
                     if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
+                    if (targetOptions?.startEmulatorOptions?.hardwareAcceleration?.mode)
+                        cmdArgs.push('-accel', targetOptions?.startEmulatorOptions?.hardwareAcceleration?.mode);
+                    if (targetOptions?.startEmulatorOptions?.hardwareAcceleration?.gpuMode)
+                        cmdArgs.push('-gpu', targetOptions?.startEmulatorOptions?.hardwareAcceleration?.gpuMode);
 
                     // eslint-disable-next-line require-atomic-updates
                     emulatorProcess = (await startEmulator(emulatorName, cmdArgs))();
+                    emulatorProcess.catch((error) => {
+                        // We need to rethrow the error in this context to halt execution.
+                        throw new Error(`Emulator failed to start: ${error.message}`);
+                    });
                     await platform.waitForDevice(150);
                 }
             }
