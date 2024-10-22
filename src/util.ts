@@ -318,7 +318,7 @@ export const startEmulator = async (name: string, args: string[]) => {
     const { env } = await ensureSdkmanager();
     const toolPath = await getAndroidDevToolPath('emulator');
 
-    return () => execa(toolPath, ['-avd', name, ...args], { env });
+    return () => execa(toolPath, ['-avd', name, ...args], { env, reject: true });
 };
 
 /*
