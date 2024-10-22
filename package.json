@@ -1,6 +1,6 @@
 {
     "name": "cyanoacrylate",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "description": "Toolkit for large-scale automated traffic analysis of mobile apps on Android and iOS.",
     "bugs": "https://github.com/tweaselORG/cyanoacrylate/issues",
     "repository": {
