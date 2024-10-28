@@ -25,6 +25,7 @@ cyanoacrylate
 - [MitmproxyTlsData](README.md#mitmproxytlsdata)
 - [PlatformApi](README.md#platformapi)
 - [RunTargetOptions](README.md#runtargetoptions)
+- [StartEmulatorOptions](README.md#startemulatoroptions)
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
@@ -73,7 +74,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:103](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L103)
+[src/index.ts:106](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L106)
 
 ___
 
@@ -93,7 +94,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:343](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L343)
+[src/index.ts:349](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L349)
 
 ___
 
@@ -163,7 +164,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:176](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L176)
+[src/index.ts:179](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L179)
 
 ___
 
@@ -183,7 +184,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:263](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L263)
+[src/index.ts:266](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L266)
 
 ___
 
@@ -201,7 +202,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:468
+node_modules/appstraction/dist/index.d.ts:474
 
 ___
 
@@ -226,7 +227,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:40](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L40)
+[src/index.ts:43](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L43)
 
 ___
 
@@ -245,7 +246,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:470
+node_modules/appstraction/dist/index.d.ts:476
 
 ___
 
@@ -287,7 +288,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/certs.html#Cert
 
 #### Defined in
 
-[src/util.ts:15](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L15)
+[src/util.ts:16](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L16)
 
 ___
 
@@ -303,7 +304,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Client
 
 #### Defined in
 
-[src/util.ts:146](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L146)
+[src/util.ts:147](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L147)
 
 ___
 
@@ -341,7 +342,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Connection
 
 #### Defined in
 
-[src/util.ts:75](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L75)
+[src/util.ts:76](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L76)
 
 ___
 
@@ -353,7 +354,7 @@ The events sent by the mitmproxy IPC events addon.
 
 #### Defined in
 
-[src/util.ts:186](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L186)
+[src/util.ts:187](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L187)
 
 ___
 
@@ -369,7 +370,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Server
 
 #### Defined in
 
-[src/util.ts:161](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L161)
+[src/util.ts:162](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L162)
 
 ___
 
@@ -403,7 +404,7 @@ https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795
 
 #### Defined in
 
-[src/util.ts:175](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L175)
+[src/util.ts:176](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L176)
 
 ___
 
@@ -429,7 +430,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/tls.html#TlsData
 
 #### Defined in
 
-[src/util.ts:127](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L127)
+[src/util.ts:128](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L128)
 
 ___
 
@@ -471,6 +472,7 @@ Functions that are available for the platforms.
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `setDeviceName` | (`deviceName`: `string`) => `Promise`<`void`\> | Sets the name of the device, which shows up to other network or bluetooth devices. |
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? `WireGuardConfig` : `Proxy` \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: `Proxy` \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
+| `snapshotDeviceState` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Save the device state to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to save to. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
@@ -495,18 +497,11 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `hardwareAcceleration?`: { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } ; `headless?`: `boolean`  }  }  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: [`StartEmulatorOptions`](README.md#startemulatoroptions)  }  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `hardwareAcceleration?`: { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } ; `headless?`: `boolean`  }  } | The options for the Android emulator run target. |
+| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: [`StartEmulatorOptions`](README.md#startemulatoroptions)  } | The options for the Android emulator run target. |
 | `android.emulator.snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
-| `android.emulator.startEmulatorOptions?` | { `audio?`: `boolean` ; `emulatorName?`: `string` ; `ephemeral?`: `boolean` ; `hardwareAcceleration?`: { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } ; `headless?`: `boolean`  } | Options for the emulator if you want it to be automatically started and stopped by this library. |
-| `android.emulator.startEmulatorOptions.audio?` | `boolean` | Whether to start the emulator with audio (default: `false`). |
-| `android.emulator.startEmulatorOptions.emulatorName?` | `string` | The name of the emulator to start. |
-| `android.emulator.startEmulatorOptions.ephemeral?` | `boolean` | Whether to discard all changes when exiting the emulator (default: `true`). |
-| `android.emulator.startEmulatorOptions.hardwareAcceleration?` | { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } | Options for hardware accelerations. These do not need to be set if everything works with the defaults. |
-| `android.emulator.startEmulatorOptions.hardwareAcceleration.gpuMode?` | ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` | Sets the `-gpu` option, see https://developer.android.com/studio/run/emulator-acceleration#accel-graphics. |
-| `android.emulator.startEmulatorOptions.hardwareAcceleration.mode?` | ``"auto"`` \| ``"off"`` \| ``"on"`` | Sets the `-accel` option, see https://developer.android.com/studio/run/emulator-commandline#common. |
-| `android.emulator.startEmulatorOptions.headless?` | `boolean` | Whether to start the emulator in headless mode (default: `false`). |
+| `android.emulator.startEmulatorOptions?` | [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options for the emulator if you want it to be automatically managed by this library. |
 | `ios` | { `device`: { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } ; `emulator`: `never`  } | The options for the iOS platform. |
 | `ios.device` | { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } | The options for the iOS physical device run target. |
 | `ios.device.ip?` | `string` | The device's IP address. If none is given, a connection via USB port forwarding is attempted. |
@@ -518,7 +513,19 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:281](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L281)
+[src/index.ts:312](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L312)
+
+___
+
+### StartEmulatorOptions
+
+Ƭ **StartEmulatorOptions**: { `createEmulator?`: `undefined` ; `emulatorName?`: `string`  } \| { `createEmulator`: `EmulatorOptions`  } & { `audio?`: `boolean` ; `ephemeral?`: `boolean` ; `hardwareAcceleration?`: { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } ; `headless?`: `boolean`  }
+
+Options for the emulator if you want it to be automatically managed by this library.
+
+#### Defined in
+
+[src/index.ts:283](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L283)
 
 ___
 
@@ -536,7 +543,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:33](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L33)
+[src/index.ts:36](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L36)
 
 ___
 
@@ -582,7 +589,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:100](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L100)
+[src/index.ts:103](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L103)
 
 ___
 
@@ -595,7 +602,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:62](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L62)
+[src/index.ts:65](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L65)
 
 ___
 
@@ -619,7 +626,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:69](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L69)
+[src/index.ts:72](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L72)
 
 ## Variables
 
@@ -698,4 +705,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:377](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L377)
+[src/index.ts:392](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L392)
