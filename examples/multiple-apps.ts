@@ -17,9 +17,7 @@ import { pause, startAnalysis } from '../src/index';
         capabilities: ['frida', 'certificate-pinning-bypass'],
         targetOptions: {
             snapshotName,
-            startEmulatorOptions: {
-                emulatorName,
-            },
+            emulatorName,
         },
     });
 

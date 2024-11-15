@@ -25,7 +25,6 @@ cyanoacrylate
 - [MitmproxyTlsData](README.md#mitmproxytlsdata)
 - [PlatformApi](README.md#platformapi)
 - [RunTargetOptions](README.md#runtargetoptions)
-- [StartEmulatorOptions](README.md#startemulatoroptions)
 - [SupportedCapability](README.md#supportedcapability)
 - [SupportedPlatform](README.md#supportedplatform)
 - [SupportedRunTarget](README.md#supportedruntarget)
@@ -74,7 +73,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:106](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L106)
+[src/index.ts:105](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L105)
 
 ___
 
@@ -94,7 +93,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:349](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L349)
+[src/index.ts:358](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L358)
 
 ___
 
@@ -164,7 +163,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:179](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L179)
+[src/index.ts:178](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L178)
 
 ___
 
@@ -184,7 +183,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:266](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L266)
+[src/index.ts:265](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L265)
 
 ___
 
@@ -227,7 +226,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:43](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L43)
+[src/index.ts:42](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L42)
 
 ___
 
@@ -288,7 +287,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/certs.html#Cert
 
 #### Defined in
 
-[src/util.ts:16](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L16)
+[src/util.ts:18](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L18)
 
 ___
 
@@ -304,7 +303,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Client
 
 #### Defined in
 
-[src/util.ts:147](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L147)
+[src/util.ts:149](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L149)
 
 ___
 
@@ -342,7 +341,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Connection
 
 #### Defined in
 
-[src/util.ts:76](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L76)
+[src/util.ts:78](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L78)
 
 ___
 
@@ -354,7 +353,7 @@ The events sent by the mitmproxy IPC events addon.
 
 #### Defined in
 
-[src/util.ts:187](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L187)
+[src/util.ts:189](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L189)
 
 ___
 
@@ -370,7 +369,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Server
 
 #### Defined in
 
-[src/util.ts:162](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L162)
+[src/util.ts:164](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L164)
 
 ___
 
@@ -404,7 +403,7 @@ https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795
 
 #### Defined in
 
-[src/util.ts:176](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L176)
+[src/util.ts:178](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L178)
 
 ___
 
@@ -430,7 +429,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/tls.html#TlsData
 
 #### Defined in
 
-[src/util.ts:128](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L128)
+[src/util.ts:130](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L130)
 
 ___
 
@@ -497,11 +496,9 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: { `snapshotName?`: `string` ; `startEmulatorOptions?`: [`StartEmulatorOptions`](README.md#startemulatoroptions)  }  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: `AndroidEmulatorRunTargetOptions`  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | { `snapshotName?`: `string` ; `startEmulatorOptions?`: [`StartEmulatorOptions`](README.md#startemulatoroptions)  } | The options for the Android emulator run target. |
-| `android.emulator.snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
-| `android.emulator.startEmulatorOptions?` | [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options for the emulator if you want it to be automatically managed by this library. |
+| `android.emulator` | `AndroidEmulatorRunTargetOptions` | The options for the Android emulator run target. |
 | `ios` | { `device`: { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } ; `emulator`: `never`  } | The options for the iOS platform. |
 | `ios.device` | { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } | The options for the iOS physical device run target. |
 | `ios.device.ip?` | `string` | The device's IP address. If none is given, a connection via USB port forwarding is attempted. |
@@ -513,19 +510,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:312](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L312)
-
-___
-
-### StartEmulatorOptions
-
-Ƭ **StartEmulatorOptions**: { `createEmulator?`: `undefined` ; `emulatorName?`: `string`  } \| { `createEmulator`: `EmulatorOptions`  } & { `audio?`: `boolean` ; `ephemeral?`: `boolean` ; `hardwareAcceleration?`: { `gpuMode?`: ``"auto"`` \| ``"host"`` \| ``"swiftshader_indirect"`` \| ``"angle_indirect"`` \| ``"guest"`` ; `mode?`: ``"auto"`` \| ``"off"`` \| ``"on"``  } ; `headless?`: `boolean`  }
-
-Options for the emulator if you want it to be automatically managed by this library.
-
-#### Defined in
-
-[src/index.ts:283](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L283)
+[src/index.ts:326](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L326)
 
 ___
 
@@ -543,7 +528,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:36](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L36)
+[src/index.ts:35](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L35)
 
 ___
 
@@ -589,7 +574,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:103](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L103)
+[src/index.ts:102](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L102)
 
 ___
 
@@ -602,7 +587,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:65](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L65)
+[src/index.ts:64](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L64)
 
 ___
 
@@ -626,7 +611,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:72](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L72)
+[src/index.ts:71](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L71)
 
 ## Variables
 
@@ -705,4 +690,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:392](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L392)
+[src/index.ts:401](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L401)

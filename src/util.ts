@@ -1,12 +1,14 @@
-import { createEmulator, ensureSdkmanager, getAndroidDevToolPath } from 'andromatic';
+import { createEmulator, ensureSdkmanager, getAndroidDevToolPath, runAndroidDevTool } from 'andromatic';
+import { createHash } from 'crypto';
 import { ctrlc } from 'ctrlc-windows';
 import dns from 'dns';
 import type { ExecaChildProcess } from 'execa';
 import { execa } from 'execa';
 import { access } from 'fs/promises';
 import timeout from 'p-timeout';
+import type { SetOptional } from 'type-fest';
 import { promisify } from 'util';
-import type { EmulatorState, StartEmulatorOptions } from '.';
+import type { AndroidEmulatorRunTargetOptions, EmulatorState } from '.';
 
 /**
  * A mitmproxy certificate object representing a TLS certificate.
@@ -313,59 +315,99 @@ export const fileExists = async (path: string) => {
     }
 };
 
-// We can't use `runAndroidDevTool` for this because that can only give you the process if you `await` it, which we
-// don't want.
-export const startNewEmulator = async (startEmulatorOptions: StartEmulatorOptions): Promise<EmulatorState> => {
-    const emulatorName = startEmulatorOptions.createEmulator
-        ? `ca-analysis-${Date.now()}`
-        : startEmulatorOptions?.emulatorName;
-    let createdByLib = false;
-
-    if (!emulatorName) throw new Error('Could not start emulator: No emulator config or name.');
-
-    if (startEmulatorOptions.createEmulator) {
-        // Create an emulator
-        await createEmulator(emulatorName, startEmulatorOptions.createEmulator);
-        createdByLib = true;
-    }
-
-    const startArgs = ['-no-boot-anim'];
-    if (startEmulatorOptions?.headless === true) startArgs.push('-no-window');
-    if (startEmulatorOptions?.audio !== true) startArgs.push('-no-audio');
-    if (startEmulatorOptions?.ephemeral !== false) startArgs.push('-no-snapshot-save');
-    if (startEmulatorOptions?.hardwareAcceleration?.mode)
-        startArgs.push('-accel', startEmulatorOptions?.hardwareAcceleration?.mode);
-    if (startEmulatorOptions?.hardwareAcceleration?.gpuMode)
-        startArgs.push('-gpu', startEmulatorOptions?.hardwareAcceleration?.gpuMode);
-
-    const { env } = await ensureSdkmanager();
-    const toolPath = await getAndroidDevToolPath('emulator');
-
-    const proc = execa(toolPath, ['-avd', emulatorName, ...startArgs], { env, reject: true });
-
-    return {
-        proc,
-        emulatorName,
-        startArgs,
-        resetSnapshotName: undefined,
-        failedStarts: 0,
-        createdByLib,
-    };
+/** Uses `avdmanager` to list currently existing emulators. */
+export const listEmulators = async () => {
+    // -c makes avdmanager return just a list of names separated by newlines.
+    const { stdout } = await runAndroidDevTool('avdmanager', ['list', 'avd', '-c']);
+    return stdout.split('\n');
 };
 
-export const restartEmulator = async (emulator: EmulatorState): Promise<EmulatorState> => {
+export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => {
+    // This returns a list of snapshots of all devices
+    const { stdout } = await runAndroidDevTool('emulator', ['-snapshot-list']);
+    return stdout.split('\n').reduce((acc, line) => {
+        const [emulatorName, snapshots] = line.replaceAll(/ |\t/g, '').split(':');
+        if (emulatorName && snapshots) acc = { [emulatorName]: snapshots?.split(',').filter((s) => s !== ''), ...acc };
+        return acc;
+    }, {});
+};
+
+// We can't use `runAndroidDevTool` for this because that can only give you the process if you `await` it, which we
+// don't want.
+export const startNewEmulator = async (
+    emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions
+): Promise<EmulatorState> => {
+    const emulator: SetOptional<EmulatorState, 'proc'> = {
+        name: '',
+        startArgs: ['-no-boot-anim'],
+        resetSnapshotName: undefined,
+        failedStarts: 0,
+        createdByLib: false,
+    };
+
+    if (emulatorRunTargetOptions.createEmulator) {
+        const { infix, ...emulatorOptions } = emulatorRunTargetOptions.createEmulator;
+        const optionsHash = createHash('md5').update(JSON.stringify(emulatorOptions)).digest('hex');
+
+        emulator.name = `cyanoacrylate-${infix}-${optionsHash}`;
+
+        const emuNameRegex = new RegExp(`cyanoacrylate-${infix}-(.*)`);
+
+        const emulatorList = await listEmulators();
+        const existingEmulators = (
+            await Promise.all(
+                emulatorList
+                    .map((name) => ({ name, hash: name.match(emuNameRegex)?.[1] }))
+                    .filter((emu) => !!emu.hash)
+                    .map(async (emu) => {
+                        if (emu.hash === optionsHash) return emu.name;
+                        await deleteEmulator(emu.name);
+                        return undefined;
+                    })
+            )
+        ).filter((emuName) => !!emuName);
+
+        if (existingEmulators.length > 1) throw Error('Emulator name is not unique. This should never happen.');
+        else if (existingEmulators.length === 1 && existingEmulators[0]) {
+            // The current emulator exists already in the correct config, lets check for a snapshot.
+            const snapshotList = (await listSnapshots())[existingEmulators[0]];
+            if (snapshotList?.includes('cyanoacrylate-ensured')) emulator.resetSnapshotName = 'cyanoacrylate-ensured';
+        } else await createEmulator(emulator.name, emulatorOptions);
+
+        emulator.createdByLib = true;
+    } else if (emulatorRunTargetOptions.emulatorName) {
+        emulator.name = emulatorRunTargetOptions.emulatorName;
+        emulator.resetSnapshotName = emulatorRunTargetOptions.snapshotName;
+    } else throw new Error('Could not start emulator: No emulator config or name.');
+
+    const startEmulatorOptions = emulatorRunTargetOptions.startEmulatorOptions;
+    if (startEmulatorOptions?.headless === true) emulator.startArgs.push('-no-window');
+    if (startEmulatorOptions?.audio !== true) emulator.startArgs.push('-no-audio');
+    if (startEmulatorOptions?.ephemeral !== false) emulator.startArgs.push('-no-snapshot-save');
+    if (startEmulatorOptions?.hardwareAcceleration?.mode)
+        emulator.startArgs.push('-accel', startEmulatorOptions?.hardwareAcceleration?.mode);
+    if (startEmulatorOptions?.hardwareAcceleration?.gpuMode)
+        emulator.startArgs.push('-gpu', startEmulatorOptions?.hardwareAcceleration?.gpuMode);
+
+    return startEmulator(emulator);
+};
+
+export const startEmulator = async (emulator: SetOptional<EmulatorState, 'proc'>): Promise<EmulatorState> => {
     const { env } = await ensureSdkmanager();
     const toolPath = await getAndroidDevToolPath('emulator');
 
-    const proc = execa(toolPath, ['-avd', emulator.emulatorName, ...emulator.startArgs], { env, reject: true });
+    const proc = execa(toolPath, ['-avd', emulator.name, ...emulator.startArgs], { env, reject: true });
     return { ...emulator, proc };
 };
 
-export const deleteEmulator = async (emulator: EmulatorState) => {
+export const deleteEmulator = async (emulator: EmulatorState | string) => {
     const { env } = await ensureSdkmanager();
     const toolPath = await getAndroidDevToolPath('avdmanager');
 
-    return execa(toolPath, ['delete', 'avd', '--name', emulator.emulatorName], { env, reject: true });
+    return execa(toolPath, ['delete', 'avd', '--name', typeof emulator === 'string' ? emulator : emulator.name], {
+        env,
+        reject: true,
+    });
 };
 /*
 License for the docstrings imported from mitmproxy:
