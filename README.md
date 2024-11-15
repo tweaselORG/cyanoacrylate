@@ -47,9 +47,7 @@ The following example collects the traffic for an app in the Android emulator. I
 
         targetOptions: {
             snapshotName: '<snapshot name>',
-            startEmulatorOptions: {
-                emulatorName: '<emulator name>',
-            },
+            emulatorName: '<emulator name>',
         },
     });
 

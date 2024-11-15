@@ -1,3 +1,4 @@
+import type { EmulatorOptions } from 'andromatic';
 import type {
     AppMeta as App,
     AppPath,
@@ -26,6 +27,7 @@ import {
     killProcess,
     onMitmproxyEvent,
     startEmulator,
+    startNewEmulator,
 } from './util';
 import { cyanoacrylateVersion } from './version.gen';
 
@@ -276,43 +278,56 @@ export type AppAnalysisResult = {
     mitmproxyEvents: MitmproxyEvent[];
 };
 
+/** Options for the emulator if you want it to be automatically managed by this library. */
+type StartEmulatorOptions = {
+    /** Whether to start the emulator in headless mode (default: `false`). */
+    headless?: boolean;
+    /** Whether to start the emulator with audio (default: `false`). */
+    audio?: boolean;
+    /** Whether to discard all changes when exiting the emulator (default: `true`). */
+    ephemeral?: boolean;
+    /** Options for hardware accelerations. These do not need to be set if everything works with the defaults. */
+    hardwareAcceleration?: {
+        /** Sets the `-accel` option, see https://developer.android.com/studio/run/emulator-commandline#common. */
+        mode?: 'auto' | 'off' | 'on';
+        /** Sets the `-gpu` option, see https://developer.android.com/studio/run/emulator-acceleration#accel-graphics. */
+        gpuMode?: 'auto' | 'host' | 'swiftshader_indirect' | 'angle_indirect' | 'guest';
+    };
+};
+
+export type AndroidEmulatorRunTargetOptions = (
+    | {
+          /** The name of the emulator to start. */
+          emulatorName?: never;
+          /** If set, creates an emulator specific for the analysis. Can not be set if `emulatorName` is set. */
+          createEmulator: EmulatorOptions & {
+              /**
+               * An infix to distinguish the emulator from other ones created by cyanoacrylate. The created emulator
+               * will be named `cyanoacrylate-{infix}-{md5 hash of the options}`.
+               */
+              infix: string;
+          };
+      }
+    | {
+          /** The name of the emulator to start. */
+          emulatorName?: string;
+          /** If set, creates an emulator specific for the analysis. Can not be set if `emulatorName` is set. */
+          createEmulator?: never;
+      }
+) & {
+    /** The name of a snapshot to use when resetting the emulator. */
+    snapshotName?: string;
+    /** Options for the emulator if you want it to be automatically managed by this library. */
+    startEmulatorOptions?: StartEmulatorOptions;
+};
+
 /** The options for a specific platform/run target combination. */
 // Use `unknown` here to mean "no options", and `never` to mean "not supported".
 export type RunTargetOptions = {
     /** The options for the Android platform. */
     android: {
         /** The options for the Android emulator run target. */
-        emulator: {
-            /** Options for the emulator if you want it to be automatically started and stopped by this library. */
-            startEmulatorOptions?: {
-                /** The name of the emulator to start. */
-                emulatorName?: string;
-                /** Whether to start the emulator in headless mode (default: `false`). */
-                headless?: boolean;
-                /** Whether to start the emulator with audio (default: `false`). */
-                audio?: boolean;
-                /** Whether to discard all changes when exiting the emulator (default: `true`). */
-                ephemeral?: boolean;
-                /**
-                 * Options for hardware accelerations. These do not need to be set if everything works with the
-                 * defaults.
-                 */
-                hardwareAcceleration?: {
-                    /**
-                     * Sets the `-accel` option, see
-                     * https://developer.android.com/studio/run/emulator-commandline#common.
-                     */
-                    mode?: 'auto' | 'off' | 'on';
-                    /**
-                     * Sets the `-gpu` option, see
-                     * https://developer.android.com/studio/run/emulator-acceleration#accel-graphics.
-                     */
-                    gpuMode?: 'auto' | 'host' | 'swiftshader_indirect' | 'angle_indirect' | 'guest';
-                };
-            };
-            /** The name of a snapshot to use when resetting the emulator. */
-            snapshotName?: string;
-        };
+        emulator: AndroidEmulatorRunTargetOptions;
         /** The options for the Android physical device run target. */
         device: unknown;
     };
@@ -366,6 +381,15 @@ export type AnalysisOptions<
           targetOptions?: Record<string, never>;
       });
 
+export type EmulatorState = {
+    proc: ExecaChildProcess<string>;
+    name: string;
+    startArgs: string[];
+    resetSnapshotName: string | undefined;
+    failedStarts: number;
+    createdByLib: boolean;
+};
+
 /**
  * Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
  * you want to end the analysis.
@@ -409,7 +433,7 @@ export async function startAnalysis<
         ),
     };
 
-    let emulatorProcess: ExecaChildProcess | undefined;
+    let emulator: EmulatorState | undefined;
     let trafficCollectionInProgress: { startDate: Date; options: TrafficCollectionOptions } | false = false;
     let mitmproxyState:
         | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
@@ -587,39 +611,56 @@ export async function startAnalysis<
         platform,
 
         ensureDevice: async (ensureOptions) => {
-            if (ensureOptions?.killExisting) await killProcess(emulatorProcess);
+            if (ensureOptions?.killExisting) await killProcess(emulator?.proc);
 
-            // Start the emulator if necessary and a name was provided.
-            if (
-                (!emulatorProcess || emulatorProcess.exitCode !== null) &&
-                analysisOptions.platform === 'android' &&
-                analysisOptions.runTarget === 'emulator'
-            ) {
+            // Start the emulator if necessary and a name or config was provided.
+            if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator') {
                 const targetOptions = analysisOptions.targetOptions as
                     | RunTargetOptions['android']['emulator']
                     | undefined;
-                const emulatorName = targetOptions?.startEmulatorOptions?.emulatorName;
-                if (emulatorName) {
-                    const cmdArgs = ['-no-boot-anim'];
-                    if (targetOptions?.startEmulatorOptions?.headless === true) cmdArgs.push('-no-window');
-                    if (targetOptions?.startEmulatorOptions?.audio !== true) cmdArgs.push('-no-audio');
-                    if (targetOptions?.startEmulatorOptions?.ephemeral !== false) cmdArgs.push('-no-snapshot-save');
-                    if (targetOptions?.startEmulatorOptions?.hardwareAcceleration?.mode)
-                        cmdArgs.push('-accel', targetOptions?.startEmulatorOptions?.hardwareAcceleration?.mode);
-                    if (targetOptions?.startEmulatorOptions?.hardwareAcceleration?.gpuMode)
-                        cmdArgs.push('-gpu', targetOptions?.startEmulatorOptions?.hardwareAcceleration?.gpuMode);
+
+                // ESLint wrongly thinks an optional chain would be logically equivalent
+                // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
+                if (emulator && emulator.proc.exitCode !== null) {
+                    // The emulator is not running anymore, but has already been created. We are restarting.
+                    startEmulator(emulator);
+                    emulator.proc.catch((error) => {
+                        // We need to rethrow the error in this context to halt execution.
+                        throw new Error(`Emulator failed: ${error.message}`);
+                    });
+                } else if (!emulator) {
+                    if (targetOptions?.createEmulator !== undefined || targetOptions?.emulatorName) {
+                        // Create or start a new emulator
+                        // eslint-disable-next-line require-atomic-updates
+                        emulator = await startNewEmulator(targetOptions);
+                        emulator.proc.catch((error) => {
+                            // We need to rethrow the error in this context to halt execution.
+                            throw new Error(`Emulator failed: ${error.message}`);
+                        });
+                    }
+                }
+
+                await platform.waitForDevice(150);
+
+                // Check for `killExisting` to avoid an infinite loop, because `resetDevice` also calls this.
+                if (!ensureOptions?.killExisting && emulator?.resetSnapshotName)
+                    await timeout(platform.resetDevice(emulator?.resetSnapshotName), { milliseconds: 5 * 60 * 1000 });
+
+                await platform.ensureDevice();
+
+                if (emulator?.createdByLib && !emulator?.resetSnapshotName) {
+                    // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
+                    const snapshotName = 'cyanoacrylate-ensured';
+                    await (platform as unknown as PlatformApi<'android', 'emulator', [], []>).snapshotDeviceState(
+                        snapshotName
+                    );
 
                     // eslint-disable-next-line require-atomic-updates
-                    emulatorProcess = (await startEmulator(emulatorName, cmdArgs))();
-                    emulatorProcess.catch((error) => {
-                        // We need to rethrow the error in this context to halt execution.
-                        throw new Error(`Emulator failed to start: ${error.message}`);
-                    });
-                    await platform.waitForDevice(150);
+                    emulator.resetSnapshotName = snapshotName;
                 }
+            } else {
+                await platform.ensureDevice();
             }
-
-            await platform.ensureDevice();
 
             device = {
                 platform: analysisOptions.platform,
@@ -651,8 +692,7 @@ export async function startAnalysis<
             if (analysisOptions.platform !== 'android' || analysisOptions.runTarget !== 'emulator')
                 throw new Error('Resetting devices is only supported for Android emulators.');
 
-            const snapshotName = (analysisOptions.targetOptions as RunTargetOptions['android']['emulator'])
-                ?.snapshotName;
+            const snapshotName = emulator?.resetSnapshotName;
             if (!snapshotName) throw new Error('Cannot reset device: No snapshot name specified.');
 
             return timeout(platform.resetDevice(snapshotName), {
@@ -751,8 +791,10 @@ export async function startAnalysis<
         stop: async () => {
             await killProcess(mitmproxyState?.proc);
 
-            if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator')
-                await killProcess(emulatorProcess);
+            if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator') {
+                // Clean up the emulator
+                await killProcess(emulator?.proc);
+            }
         },
     };
 }
