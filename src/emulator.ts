@@ -28,7 +28,8 @@ export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => 
 };
 
 export class Emulator {
-    _proc: ExecaChildProcess<string> | undefined;
+    private _abortController: AbortController;
+    private _proc: ExecaChildProcess<string> | undefined;
     name: string | undefined;
     startArgs: string[] = ['-no-boot-anim'];
     resetSnapshotName: string | undefined;
@@ -38,6 +39,10 @@ export class Emulator {
     createOptions: EmulatorOptions | undefined;
     rebuilds = 0;
     hasExited = false;
+
+    constructor() {
+        this._abortController = new AbortController();
+    }
 
     static async fromRunTarget(emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions): Promise<Emulator> {
         const emulator = new Emulator();
@@ -93,6 +98,8 @@ export class Emulator {
     }
 
     async start(options?: { forceRestart: boolean }) {
+        if (!this.name) throw new Error('A name is missing. The emulator was not initialized.');
+
         if (options?.forceRestart && !this.hasExited && this._proc) {
             // We can do this, since `this.start()` throws away the previous process and its listeners.
             this._proc.on('exit', () => this.start());
@@ -103,7 +110,8 @@ export class Emulator {
         const { env } = await ensureSdkmanager();
         const toolPath = await getAndroidDevToolPath('emulator');
 
-        if (!this.name) throw new Error('A name is missing. The emulator was not initialized.');
+        // AbortControllers are single use, so we need to recreate one, if the old one was used already.
+        if (this._abortController.signal.aborted) this._abortController = new AbortController();
 
         this._proc = execa(toolPath, ['-avd', this.name, ...this.startArgs], { env, reject: true });
         this._proc.catch(async (error: ExecaError) => {
@@ -111,8 +119,10 @@ export class Emulator {
             if (error.stdout?.includes('Failed to load snapshot')) {
                 // We are trying to load a snapshot
                 if (error.stdout.includes('The snapshot requires the feature'))
-                    throw new EmulatorError(
-                        `Loading the emulator state failed. Maybe you are trying to load a snapshot from a different emulator configuration (e.g. headless mode)?`
+                    this._abortController.abort(
+                        new EmulatorError(
+                            `Loading the emulator state failed. Maybe you are trying to load a snapshot from a different emulator configuration (e.g. headless mode)?`
+                        )
                     );
             }
 
@@ -120,15 +130,19 @@ export class Emulator {
             this.lastError = error;
             if (!error.killed && !error.isCanceled) await killProcess(this._proc);
             // We need to rethrow the error in this context to halt execution.
-            throw new EmulatorError(error.message);
+            this._abortController.abort(EmulatorError.fromExecaError(error));
         });
         this._proc.on('exit', () => (this.hasExited = true));
         this.lastError = undefined;
         this.hasExited = false;
+
+        return this._abortController.signal;
     }
 
     async kill() {
         await killProcess(this._proc);
+        // This prevents a memory leak when we overwrite `this._proc`.
+        this._proc?.removeAllListeners();
     }
 
     async rebuild() {
@@ -145,12 +159,31 @@ export class Emulator {
         this._proc = undefined;
         this.resetSnapshotName = undefined;
     }
+
+    getAbortSignal() {
+        return this._abortController.signal;
+    }
 }
 
 export class EmulatorError extends Error {
-    constructor(message: string) {
+    consoleOutput: string | undefined;
+    emulatorCommand: string | undefined;
+    signal: string | undefined;
+
+    constructor(message: string, context?: { consoleOutput?: string; emulatorCommand?: string; signal?: string }) {
         super(message);
         this.name = 'EmulatorError';
+        this.consoleOutput = context?.consoleOutput;
+        this.emulatorCommand = context?.emulatorCommand;
+        this.signal = context?.signal;
+    }
+
+    static fromExecaError(error: ExecaError) {
+        return new EmulatorError(error.shortMessage, {
+            consoleOutput: error.stdout + error.stderr,
+            emulatorCommand: error.command,
+            signal: error.signal,
+        });
     }
 }
 

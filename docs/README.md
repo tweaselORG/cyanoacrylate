@@ -73,7 +73,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:97](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L97)
+[src/index.ts:105](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L105)
 
 ___
 
@@ -93,7 +93,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:366](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L366)
+[src/index.ts:374](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L374)
 
 ___
 
@@ -163,7 +163,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:174](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L174)
+[src/index.ts:182](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L182)
 
 ___
 
@@ -183,7 +183,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:261](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L261)
+[src/index.ts:269](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L269)
 
 ___
 
@@ -226,7 +226,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
+[src/index.ts:42](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L42)
 
 ___
 
@@ -455,7 +455,7 @@ Functions that are available for the platforms.
 | `addCalendarEvent` | (`eventData`: `CalendarEventData`) => `Promise`<`void`\> | Adds a simple event to the device’s calendar. Requires the `frida` capability. On Android, this currently only works if a calendar has already been set up. |
 | `addContact` | (`contactData`: `ContactData`) => `Promise`<`void`\> | Add a contact to the device’s contact book. Requires the `frida` capability. On Android, this currently only works if `com.android.contacts` is installed. |
 | `clearStuckModals` | `Platform` extends ``"android"`` ? () => `Promise`<`void`\> : `never` | Clear any potential stuck modals by pressing the back button followed by the home button. This is currently broken on iOS (see https://github.com/tweaselORG/appstraction/issues/12). Requires the `ssh` capability on iOS. |
-| `ensureDevice` | () => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
+| `ensureDevice` | (`signal?`: `AbortSignal`) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities, performing necessary setup steps. This should always be the first function you call. Note that depending on the capabilities you set, the setup steps may make permanent changes to your device. For Android, you can set the url to the WireGuard APK which should be installed in the `WIREGUARD_APK_URL` environment variable. Note that it is only used if WireGuard isn’t installed already. |
 | `getDeviceAttribute` | <Attribute\>(`attribute`: `Attribute`, ...`options`: `Attribute` extends keyof [`GetDeviceAttributeOptions`](README.md#getdeviceattributeoptions) ? [options: GetDeviceAttributeOptions[Attribute]] : [options?: undefined]) => `Promise`<`string`\> | Get the value of the given device attribute. |
 | `getForegroundAppId` | () => `Promise`<`string` \| `undefined`\> | Get the app ID of the running app that is currently in the foreground. Requires the `frida` capability on iOS. |
 | `getPidForAppId` | (`appId`: `string`) => `Promise`<`number` \| `undefined`\> | Get the PID of the app with the given app ID if it is currently running. Requires the `frida` capability on iOS. |
@@ -471,14 +471,14 @@ Functions that are available for the platforms.
 | `setClipboard` | (`text`: `string`) => `Promise`<`void`\> | Set the clipboard to the given text. Requires the `frida` capability on Android and iOS. |
 | `setDeviceName` | (`deviceName`: `string`) => `Promise`<`void`\> | Sets the name of the device, which shows up to other network or bluetooth devices. |
 | `setProxy` | `Platform` extends ``"android"`` ? (`proxy`: ``"wireguard"`` extends `Capability` ? `WireGuardConfig` : `Proxy` \| ``null``) => `Promise`<`void`\> : `Platform` extends ``"ios"`` ? (`proxy`: `Proxy` \| ``null``) => `Promise`<`void`\> : `never` | Set or disable the proxy on the device. If you have enabled the `wireguard` capability, this will start or stop a WireGuard tunnel. Otherwise, it will set the global proxy on the device. On iOS, the proxy is set for the current WiFi network. It won't apply for other networks or for cellular data connections. WireGuard is currently only supported on Android. Enabling a WireGuard tunnel requires the `root` capability. **`Remarks`** The WireGuard integration will create a new tunnel in the app called `appstraction` and delete it when the proxy is stopped. If you have an existing tunnel with the same name, it will be overridden. **`Param`** The proxy to set, or `null` to disable the proxy. If you have enabled the `wireguard` capability, this is a string of the full WireGuard configuration to use. |
-| `snapshotDeviceState` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`) => `Promise`<`void`\> : `never` : `never` | Save the device state to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to save to. |
+| `snapshotDeviceState` | `Platform` extends ``"android"`` ? `RunTarget` extends ``"emulator"`` ? (`snapshotName`: `string`, `signal?`: `AbortSignal`) => `Promise`<`void`\> : `never` : `never` | Save the device state to the specified snapshot (only available for emulators). **`Param`** The name of the snapshot to save to. |
 | `startApp` | (`appId`: `string`) => `Promise`<`void`\> | Start the app with the given app ID. Doesn't wait for the app to be ready. Also enables the certificate pinning bypass if enabled. Requires the `frida` or `ssh` capability on iOS. On Android, this will start the app with or without a certificate pinning bypass depending on the `certificate-pinning-bypass` capability. |
 | `stopApp` | (`appId`: `string`) => `Promise`<`void`\> | Force-stop the app with the given app ID. |
 | `target` | { `platform`: `Platform` ; `runTarget`: `RunTarget`  } | An indicator for what platform and run target this instance of PlatformApi is configured for. This is useful mostly to write typeguards. |
 | `target.platform` | `Platform` | The platform this instance is configured for, i.e. `ios` or `android`. |
 | `target.runTarget` | `RunTarget` | The run target this instance is configured for, i.e. `device` or `emulator`. |
 | `uninstallApp` | (`appId`: `string`) => `Promise`<`void`\> | Uninstall the app with the given app ID. Will not fail if the app is not installed. This also removes any data stored by the app. |
-| `waitForDevice` | (`tries?`: `number`) => `Promise`<`void`\> | Wait until the device or emulator has been connected and has booted up completely. |
+| `waitForDevice` | (`tries?`: `number`, `signal?`: `AbortSignal`) => `Promise`<`void`\> | Wait until the device or emulator has been connected and has booted up completely. |
 
 #### Defined in
 
@@ -510,7 +510,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:334](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L334)
+[src/index.ts:342](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L342)
 
 ___
 
@@ -528,7 +528,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:27](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L27)
+[src/index.ts:35](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L35)
 
 ___
 
@@ -574,7 +574,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:94](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L94)
+[src/index.ts:102](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L102)
 
 ___
 
@@ -587,7 +587,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:56](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L56)
+[src/index.ts:64](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L64)
 
 ___
 
@@ -611,7 +611,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:63](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L63)
+[src/index.ts:71](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L71)
 
 ## Variables
 
@@ -641,7 +641,7 @@ node_modules/appstraction/dist/index.d.ts:60
 
 ### pause
 
-▸ **pause**(`durationInMs`): `Promise`<`unknown`\>
+▸ **pause**(`durationInMs`, `signal?`): `Promise`<`unknown`\>
 
 Pause for a given duration.
 
@@ -650,6 +650,7 @@ Pause for a given duration.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `durationInMs` | `number` | The duration to pause for, in milliseconds. |
+| `signal?` | `AbortSignal` | - |
 
 #### Returns
 
@@ -690,4 +691,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:400](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L400)
+[src/index.ts:408](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L408)

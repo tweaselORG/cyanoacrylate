@@ -20,7 +20,15 @@ import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
 import { Emulator, EmulatorError } from './emulator';
 import type { MitmproxyEvent } from './util';
-import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, onMitmproxyEvent } from './util';
+import {
+    awaitMitmproxyEvent,
+    awaitProcessClose,
+    dnsLookup,
+    fileExists,
+    killProcess,
+    onMitmproxyEvent,
+    rejectOnAbort,
+} from './util';
 import { cyanoacrylateVersion } from './version.gen';
 
 /** A capability supported by this library. */
@@ -623,9 +631,9 @@ export async function startAnalysis<
                 // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
                 if (emulator) {
                     // The emulator is not running anymore, but has already been created. We are restarting.
-                    if (emulator.failedStarts < (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1) + 1)
+                    if (emulator.failedStarts < (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1) + 1) {
                         await emulator.start({ forceRestart: !!ensureOptions?.forceRestart });
-                    else if (
+                    } else if (
                         emulator.createdByLib &&
                         emulator.rebuilds < (targetOptions?.createEmulator?.attemptRebuilds ?? 0)
                     ) {
@@ -646,24 +654,34 @@ Message of the last error: ${emulator.lastError?.message}`);
                     }
                 }
 
-                await platform.waitForDevice(150);
+                const abortSignal = emulator?.getAbortSignal();
+                abortSignal?.throwIfAborted();
 
-                // If we are coming from `resetDevice` we should skip this, as it will also do this again.
-                if (!ensureOptions?.skipReset && emulator?.resetSnapshotName)
-                    await timeout(platform.resetDevice(emulator?.resetSnapshotName), { milliseconds: 5 * 60 * 1000 });
+                await Promise.race([
+                    (async () => {
+                        await platform.waitForDevice(150);
 
-                await platform.ensureDevice();
+                        // If we are coming from `resetDevice` we should skip this, as it will also do this again.
+                        if (!ensureOptions?.skipReset && emulator?.resetSnapshotName)
+                            await timeout(platform.resetDevice(emulator?.resetSnapshotName), {
+                                milliseconds: 5 * 60 * 1000,
+                            });
 
-                if (emulator?.createdByLib && !emulator?.resetSnapshotName) {
-                    // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
-                    const snapshotName = 'cyanoacrylate-ensured';
-                    await (platform as unknown as PlatformApi<'android', 'emulator', [], []>).snapshotDeviceState(
-                        snapshotName
-                    );
+                        await platform.ensureDevice();
 
-                    // eslint-disable-next-line require-atomic-updates
-                    emulator.resetSnapshotName = snapshotName;
-                }
+                        if (emulator?.createdByLib && !emulator?.resetSnapshotName) {
+                            // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
+                            const snapshotName = 'cyanoacrylate-ensured';
+                            await (
+                                platform as unknown as PlatformApi<'android', 'emulator', [], []>
+                            ).snapshotDeviceState(snapshotName);
+
+                            // eslint-disable-next-line require-atomic-updates
+                            emulator.resetSnapshotName = snapshotName;
+                        }
+                    })(),
+                    abortSignal && rejectOnAbort(abortSignal),
+                ]);
             } else {
                 await platform.ensureDevice();
             }
@@ -716,6 +734,8 @@ Message of the last error: ${emulator.lastError?.message}`);
             });
         },
         startAppAnalysis: async (appIdOrPath, options) => {
+            emulator?.getAbortSignal().throwIfAborted();
+
             const appIdProvided = typeof appIdOrPath === 'string' && !(await fileExists(appIdOrPath));
 
             if (typeof appIdOrPath !== 'string' && analysisOptions.platform !== 'android')
