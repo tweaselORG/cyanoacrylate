@@ -7,7 +7,7 @@ import {
 } from 'andromatic';
 import { createHash } from 'crypto';
 import { execa, type ExecaChildProcess, type ExecaError } from 'execa';
-import type { AndroidEmulatorRunTargetOptions } from '.';
+import type { AndroidEmulatorRunTargetOptions, SupportedCapability, SupportedPlatform } from '.';
 import { killProcess } from './util';
 
 /** Uses `avdmanager` to list currently existing emulators. */
@@ -26,6 +26,18 @@ export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => 
         return acc;
     }, {});
 };
+
+export const snapshotHasCapabilties = <Platform extends SupportedPlatform>(
+    snapshotName: string,
+    capabilities: SupportedCapability<Platform>[]
+) => {
+    const snapshotRegex = /^cyanoacrylate-ensured-(.*)$/;
+    const capabilityString = snapshotName.match(snapshotRegex)?.[1];
+    return capabilityString && capabilityString === capabilities.sort().join('_');
+};
+
+export const deleteSnapshot = (snapshotName: string) =>
+    runAndroidDevTool('adb', ['emu', 'avd', 'snapshot', 'delete', snapshotName]);
 
 export class Emulator {
     private _abortController: AbortController;
@@ -73,10 +85,10 @@ export class Emulator {
 
             if (existingEmulators.length > 1) throw Error('Emulator name is not unique. This should never happen.');
             else if (existingEmulators.length === 1 && existingEmulators[0]) {
+                // TODO: We skip this for now, until we implement proper management of snapshot states, so that the snapshot has the correct capabilities.
                 // The current emulator exists already in the correct config, lets check for a snapshot.
-                const snapshotList = (await listSnapshots())[existingEmulators[0]];
-                if (snapshotList?.includes('cyanoacrylate-ensured'))
-                    emulator.resetSnapshotName = 'cyanoacrylate-ensured';
+                // const snapshotList = (await listSnapshots())[existingEmulators[0]];
+                // emulator.resetSnapshotName = snapshotList?.find((s) => s.startsWith('cyanoacrylate-ensured'));
             } else await createEmulator(emulator.name, emulatorOptions);
 
             emulator.createdByLib = true;
