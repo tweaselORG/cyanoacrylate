@@ -7,18 +7,31 @@ import { pause, startAnalysis } from '../src/index';
 // `npx tsx examples/multiple-apps.ts <emulator name> <snapshot name> <path to a folder of single APKs>`
 
 (async () => {
-    const emulatorName = process.argv[2] || 'emulator-name';
-    const snapshotName = process.argv[3] || 'snapshot-with-setup-emu';
-    const apkFolder = process.argv[4] || 'path/to/app-files';
+    const apkFolder = process.argv[2];
+    const emulatorName = process.argv[3];
+    const snapshotName = process.argv[4];
+
+    if (!apkFolder) throw Error('Please provide a folder of APKs as the first argument.');
 
     const analysis = await startAnalysis({
         platform: 'android',
         runTarget: 'emulator',
         capabilities: ['frida', 'certificate-pinning-bypass'],
-        targetOptions: {
-            snapshotName,
-            emulatorName,
-        },
+        targetOptions:
+            emulatorName && snapshotName
+                ? {
+                      snapshotName,
+                      emulatorName,
+                  }
+                : {
+                      createEmulator: {
+                          infix: 'test',
+                          variant: 'google_apis',
+                          architecture: 'x86_64',
+                          attemptRebuilds: 0,
+                          apiLevel: 33,
+                      },
+                  },
     });
 
     await analysis.ensureDevice();
@@ -27,28 +40,35 @@ import { pause, startAnalysis } from '../src/index';
     // so you can easily loop through an array of apps.
     const apks = await readdir(apkFolder);
     for (const apkFile of apks) {
-        const appAnalysis = await analysis.startAppAnalysis(path.join(apkFolder, apkFile) as `${string}.apk`);
+        try {
+            await analysis.ensureDevice();
 
-        await analysis.resetDevice();
-        // await analysis.ensureTrackingDomainResolution();
+            const appAnalysis = await analysis.startAppAnalysis(path.join(apkFolder, apkFile) as `${string}.apk`);
 
-        await appAnalysis.installApp();
-        await appAnalysis.setAppPermissions();
-        await appAnalysis.startTrafficCollection();
-        await appAnalysis.startApp();
+            await analysis.resetDevice();
+            // await analysis.ensureTrackingDomainResolution();
 
-        // Pause to wait for the app to generate network traffic.
-        await pause(6_000);
+            await appAnalysis.installApp();
+            await appAnalysis.setAppPermissions();
+            await appAnalysis.startTrafficCollection();
+            await appAnalysis.startApp();
 
-        await appAnalysis.stopTrafficCollection();
+            // Pause to wait for the app to generate network traffic.
+            await pause(6_000);
 
-        const result = await appAnalysis.stop();
+            await appAnalysis.stopTrafficCollection();
 
-        console.dir(result, { depth: null });
-        // {
-        //    app: { id: '<app id>',  name: '<app name>', version: '<app version>', ... },
-        //    traffic: { '2023-03-27T10:29:44.197Z': { log: ... } }  <- The traffic collections are named by a timestamp and contain the collected requests in the HAR format.
-        // }
+            const result = await appAnalysis.stop();
+
+            console.dir(result, { depth: null });
+            // {
+            //    app: { id: '<app id>',  name: '<app name>', version: '<app version>', ... },
+            //    traffic: { '2023-03-27T10:29:44.197Z': { log: ... } }  <- The traffic collections are named by a timestamp and contain the collected requests in the HAR format.
+            // }
+        } catch (error: any) {
+            // Handle the error here, e.g. queue the app for analysis again etc.
+            if (error.name === 'EmulatorError') console.error(error.message);
+        }
     }
 
     await analysis.stop();
