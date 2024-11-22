@@ -62,7 +62,7 @@
         "autopy": "^1.1.1",
         "cross-fetch": "^3.1.5",
         "ctrlc-windows": "^2.1.0",
-        "execa": "^7.0.0",
+        "execa": "7.1.1",
         "global-cache-dir": "^4.4.0",
         "js-ini": "^1.6.0",
         "p-timeout": "^6.1.1",

@@ -18,17 +18,9 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
+import { Emulator, EmulatorError } from './emulator';
 import type { MitmproxyEvent } from './util';
-import {
-    awaitMitmproxyEvent,
-    awaitProcessClose,
-    dnsLookup,
-    fileExists,
-    killProcess,
-    onMitmproxyEvent,
-    startEmulator,
-    startNewEmulator,
-} from './util';
+import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, onMitmproxyEvent } from './util';
 import { cyanoacrylateVersion } from './version.gen';
 
 /** A capability supported by this library. */
@@ -119,9 +111,13 @@ export type Analysis<
      *
      * @param options An object with the following optional options:
      *
-     *   - `killExisting`: Whether to kill (and then restart) the emulator if it is already running (default: `false`).
+     *   - `killExisting`: DEPRECATED: Whether to kill the emulator process (and then restart) the emulator if it is already
+     *       running (default: `false`).
+     *   - `forceRestart`: Whether to force restarting the emulator if it is already running (default: `false`).
+     *   - `skipReset`: This skips resetting the emulator in ensureDevice to speed up ensuring for reused emulators
+     *       (default: `false`).
      */
-    ensureDevice: (options?: { killExisting?: boolean }) => Promise<void>;
+    ensureDevice: (options?: { killExisting?: boolean; forceRestart?: boolean; skipReset?: boolean }) => Promise<void>;
     /**
      * Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is
      * interfering with the results.
@@ -293,6 +289,12 @@ type StartEmulatorOptions = {
         /** Sets the `-gpu` option, see https://developer.android.com/studio/run/emulator-acceleration#accel-graphics. */
         gpuMode?: 'auto' | 'host' | 'swiftshader_indirect' | 'angle_indirect' | 'guest';
     };
+    /**
+     * How many times to retry starting the emulator in case of a failure.
+     *
+     * @default 1
+     */
+    attemptRestarts?: number;
 };
 
 export type AndroidEmulatorRunTargetOptions = (
@@ -306,6 +308,12 @@ export type AndroidEmulatorRunTargetOptions = (
                * will be named `cyanoacrylate-{infix}-{md5 hash of the options}`.
                */
               infix: string;
+              /**
+               * How often to try rebuilding the emulator completely in case of an error.
+               *
+               * @default 0
+               */
+              attemptRebuilds?: number;
           };
       }
     | {
@@ -381,15 +389,6 @@ export type AnalysisOptions<
           targetOptions?: Record<string, never>;
       });
 
-export type EmulatorState = {
-    proc: ExecaChildProcess<string>;
-    name: string;
-    startArgs: string[];
-    resetSnapshotName: string | undefined;
-    failedStarts: number;
-    createdByLib: boolean;
-};
-
 /**
  * Initialize an analysis for the given platform and run target. Remember to call `stop()` on the returned object when
  * you want to end the analysis.
@@ -433,7 +432,7 @@ export async function startAnalysis<
         ),
     };
 
-    let emulator: EmulatorState | undefined;
+    let emulator: Emulator | undefined;
     let trafficCollectionInProgress: { startDate: Date; options: TrafficCollectionOptions } | false = false;
     let mitmproxyState:
         | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
@@ -468,7 +467,7 @@ export async function startAnalysis<
             harOutputPath,
             events: [],
         };
-        onMitmproxyEvent(mitmproxyState.proc, (msg) => {
+        onMitmproxyEvent(mitmproxyState?.proc, (msg) => {
             mitmproxyState?.events.push(msg);
         });
 
@@ -610,8 +609,9 @@ export async function startAnalysis<
     return {
         platform,
 
-        ensureDevice: async (ensureOptions) => {
-            if (ensureOptions?.killExisting) await killProcess(emulator?.proc);
+        async ensureDevice(ensureOptions) {
+            // This is to support legacy code and will be deprecated in a future version.
+            if (ensureOptions?.killExisting) await emulator?.kill();
 
             // Start the emulator if necessary and a name or config was provided.
             if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator') {
@@ -621,29 +621,35 @@ export async function startAnalysis<
 
                 // ESLint wrongly thinks an optional chain would be logically equivalent
                 // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-                if (emulator && emulator.proc.exitCode !== null) {
+                if (emulator) {
                     // The emulator is not running anymore, but has already been created. We are restarting.
-                    startEmulator(emulator);
-                    emulator.proc.catch((error) => {
-                        // We need to rethrow the error in this context to halt execution.
-                        throw new Error(`Emulator failed: ${error.message}`);
-                    });
+                    if (emulator.failedStarts < (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1) + 1)
+                        await emulator.start({ forceRestart: !!ensureOptions?.forceRestart });
+                    else if (
+                        emulator.createdByLib &&
+                        emulator.rebuilds < (targetOptions?.createEmulator?.attemptRebuilds ?? 0)
+                    ) {
+                        await emulator.rebuild();
+                        await emulator.start();
+                    } else {
+                        throw new EmulatorError(`The emulator cannot be restarted after a failed run, because the restart and rebuild limits have been reached. Your emulator configuration is likely broken.
+Failed starts of the current build: ${emulator.failedStarts}
+Attempted rebuilds: ${emulator.rebuilds}
+Message of the last error: ${emulator.lastError?.message}`);
+                    }
                 } else if (!emulator) {
                     if (targetOptions?.createEmulator !== undefined || targetOptions?.emulatorName) {
                         // Create or start a new emulator
                         // eslint-disable-next-line require-atomic-updates
-                        emulator = await startNewEmulator(targetOptions);
-                        emulator.proc.catch((error) => {
-                            // We need to rethrow the error in this context to halt execution.
-                            throw new Error(`Emulator failed: ${error.message}`);
-                        });
+                        emulator = await Emulator.fromRunTarget(targetOptions);
+                        await emulator.start();
                     }
                 }
 
                 await platform.waitForDevice(150);
 
-                // Check for `killExisting` to avoid an infinite loop, because `resetDevice` also calls this.
-                if (!ensureOptions?.killExisting && emulator?.resetSnapshotName)
+                // If we are coming from `resetDevice` we should skip this, as it will also do this again.
+                if (!ensureOptions?.skipReset && emulator?.resetSnapshotName)
                     await timeout(platform.resetDevice(emulator?.resetSnapshotName), { milliseconds: 5 * 60 * 1000 });
 
                 await platform.ensureDevice();
@@ -702,7 +708,10 @@ export async function startAnalysis<
 
                 // Sometimes, the Android emulator gets stuck and doesn't accept any commands anymore. In this case, we
                 // restart it.
-                await timeout((await this).ensureDevice({ killExisting: true }), { milliseconds: 60 * 1000 });
+                // TODO: Maybe we want this to call `emulator.start({forceRestart: true})` directly? We could get rid of another `ensureDevice` this way.
+                await timeout((await this).ensureDevice({ forceRestart: true, skipReset: true }), {
+                    milliseconds: 60 * 1000,
+                });
                 await timeout(platform.resetDevice(snapshotName), { milliseconds: 5 * 60 * 1000 });
             });
         },
@@ -793,7 +802,7 @@ export async function startAnalysis<
 
             if (analysisOptions.platform === 'android' && analysisOptions.runTarget === 'emulator') {
                 // Clean up the emulator
-                await killProcess(emulator?.proc);
+                await emulator?.kill();
             }
         },
     };

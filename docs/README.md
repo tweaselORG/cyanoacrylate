@@ -62,7 +62,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `ensureDevice` | (`options?`: { `killExisting?`: `boolean`  }) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an emulator and wait for it to boot if necessary and a name was provided in `targetOptions.startEmulatorOptions.emulatorName`. On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is chosen. |
+| `ensureDevice` | (`options?`: { `forceRestart?`: `boolean` ; `killExisting?`: `boolean` ; `skipReset?`: `boolean`  }) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an emulator and wait for it to boot if necessary and a name was provided in `targetOptions.startEmulatorOptions.emulatorName`. On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is chosen. |
 | `ensureTrackingDomainResolution` | () => `Promise`<`void`\> | Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is interfering with the results. |
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
 | `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
@@ -73,7 +73,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:105](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L105)
+[src/index.ts:97](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L97)
 
 ___
 
@@ -93,7 +93,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:358](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L358)
+[src/index.ts:366](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L366)
 
 ___
 
@@ -163,7 +163,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:178](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L178)
+[src/index.ts:174](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L174)
 
 ___
 
@@ -183,7 +183,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:265](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L265)
+[src/index.ts:261](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L261)
 
 ___
 
@@ -226,7 +226,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:42](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L42)
+[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
 
 ___
 
@@ -287,7 +287,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/certs.html#Cert
 
 #### Defined in
 
-[src/util.ts:18](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L18)
+[src/util.ts:13](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L13)
 
 ___
 
@@ -303,7 +303,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Client
 
 #### Defined in
 
-[src/util.ts:149](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L149)
+[src/util.ts:144](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L144)
 
 ___
 
@@ -341,7 +341,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Connection
 
 #### Defined in
 
-[src/util.ts:78](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L78)
+[src/util.ts:73](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L73)
 
 ___
 
@@ -353,7 +353,7 @@ The events sent by the mitmproxy IPC events addon.
 
 #### Defined in
 
-[src/util.ts:189](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L189)
+[src/util.ts:184](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L184)
 
 ___
 
@@ -369,7 +369,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/connection.html#Server
 
 #### Defined in
 
-[src/util.ts:164](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L164)
+[src/util.ts:159](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L159)
 
 ___
 
@@ -403,7 +403,7 @@ https://github.com/mitmproxy/mitmproxy/blob/8f1329377147538afdf06344179c2fd90795
 
 #### Defined in
 
-[src/util.ts:178](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L178)
+[src/util.ts:173](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L173)
 
 ___
 
@@ -429,7 +429,7 @@ https://docs.mitmproxy.org/stable/api/mitmproxy/tls.html#TlsData
 
 #### Defined in
 
-[src/util.ts:130](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L130)
+[src/util.ts:125](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/util.ts#L125)
 
 ___
 
@@ -510,7 +510,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:326](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L326)
+[src/index.ts:334](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L334)
 
 ___
 
@@ -528,7 +528,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:35](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L35)
+[src/index.ts:27](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L27)
 
 ___
 
@@ -574,7 +574,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:102](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L102)
+[src/index.ts:94](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L94)
 
 ___
 
@@ -587,7 +587,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:64](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L64)
+[src/index.ts:56](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L56)
 
 ___
 
@@ -611,7 +611,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:71](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L71)
+[src/index.ts:63](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L63)
 
 ## Variables
 
@@ -690,4 +690,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:401](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L401)
+[src/index.ts:400](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L400)
