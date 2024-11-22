@@ -659,22 +659,26 @@ Message of the last error: ${emulator.lastError?.message}`);
 
                 await Promise.race([
                     (async () => {
-                        await platform.waitForDevice(150);
+                        await platform.waitForDevice(150, abortSignal);
 
                         // If we are coming from `resetDevice` we should skip this, as it will also do this again.
                         if (!ensureOptions?.skipReset && emulator?.resetSnapshotName)
-                            await timeout(platform.resetDevice(emulator?.resetSnapshotName), {
-                                milliseconds: 5 * 60 * 1000,
-                            });
+                            await timeout(
+                                platform.resetDevice(emulator?.resetSnapshotName, emulator?.getAbortSignal()),
+                                {
+                                    milliseconds: 5 * 60 * 1000,
+                                    signal: emulator?.getAbortSignal(),
+                                }
+                            );
 
-                        await platform.ensureDevice();
+                        await platform.ensureDevice(abortSignal);
 
                         if (emulator?.createdByLib && !emulator?.resetSnapshotName) {
                             // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
                             const snapshotName = 'cyanoacrylate-ensured';
                             await (
                                 platform as unknown as PlatformApi<'android', 'emulator', [], []>
-                            ).snapshotDeviceState(snapshotName);
+                            ).snapshotDeviceState(snapshotName, emulator?.getAbortSignal());
 
                             // eslint-disable-next-line require-atomic-updates
                             emulator.resetSnapshotName = snapshotName;
@@ -719,8 +723,9 @@ Message of the last error: ${emulator.lastError?.message}`);
             const snapshotName = emulator?.resetSnapshotName;
             if (!snapshotName) throw new Error('Cannot reset device: No snapshot name specified.');
 
-            return timeout(platform.resetDevice(snapshotName), {
+            return timeout(platform.resetDevice(snapshotName, emulator?.getAbortSignal()), {
                 milliseconds: 5 * 60 * 1000,
+                signal: emulator?.getAbortSignal(),
             }).catch(async (err) => {
                 if (!(err instanceof TimeoutError)) throw err;
 
@@ -729,8 +734,13 @@ Message of the last error: ${emulator.lastError?.message}`);
                 // TODO: Maybe we want this to call `emulator.start({forceRestart: true})` directly? We could get rid of another `ensureDevice` this way.
                 await timeout((await this).ensureDevice({ forceRestart: true, skipReset: true }), {
                     milliseconds: 60 * 1000,
+                    signal: emulator?.getAbortSignal(),
                 });
-                await timeout(platform.resetDevice(snapshotName), { milliseconds: 5 * 60 * 1000 });
+                emulator?.getAbortSignal().throwIfAborted();
+                await timeout(platform.resetDevice(snapshotName, emulator?.getAbortSignal()), {
+                    milliseconds: 5 * 60 * 1000,
+                    signal: emulator?.getAbortSignal(),
+                });
             });
         },
         startAppAnalysis: async (appIdOrPath, options) => {
