@@ -39,25 +39,44 @@ export const snapshotHasCapabilties = <Platform extends SupportedPlatform>(
 export const deleteSnapshot = (snapshotName: string) =>
     runAndroidDevTool('adb', ['emu', 'avd', 'snapshot', 'delete', snapshotName]);
 
-export class Emulator {
+export class AndroidEmulator {
     private _abortController: AbortController;
     private _proc: ExecaChildProcess<string> | undefined;
+    /** The name of the emulator used by the android tools such as `avdmanager` */
     name: string | undefined;
+    /** List of arguments the `emulator` command should be started with. */
     startArgs: string[] = ['-no-boot-anim'];
+    /**
+     * The name of the snapshot this emulator should be reset to, if needed. If the emulator was created by the library,
+     * this will be `cyanoacrylate-ensured`.
+     */
     resetSnapshotName: string | undefined;
+    /**
+     * Number of runs in which the emulator encountered an error and crashed du to it. This is reset if you rebuild the
+     * emulator.
+     */
     failedStarts = 0;
+    /** The error which produced the most recent crash. */
     lastError: ExecaError | undefined;
+    /** Whether the emulator is managed by cyanoacrylate completely. */
     createdByLib = false;
+    /**
+     * The options for `createEmulator()` used to create this emulator. Will be `undefined` if `createdByLib` is
+     * `false`.
+     */
     createOptions: EmulatorOptions | undefined;
+    /** How many times this emulator was deleted and newly created in the current session. */
     rebuilds = 0;
+    /** This is true, if the emulator process stopped. The reverse is not necessarily the case. */
     hasExited = false;
 
     constructor() {
         this._abortController = new AbortController();
     }
 
-    static async fromRunTarget(emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions): Promise<Emulator> {
-        const emulator = new Emulator();
+    /** Construct an instance of Emulator from the `runTarget` passed to `startAnalysis()`. */
+    static async fromRunTarget(emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions): Promise<AndroidEmulator> {
+        const emulator = new AndroidEmulator();
 
         if (emulatorRunTargetOptions.createEmulator) {
             const { infix, ...emulatorOptions } = emulatorRunTargetOptions.createEmulator;
@@ -109,6 +128,16 @@ export class Emulator {
         return emulator;
     }
 
+    /**
+     * Start the emulator. If it is already running, this will do nothing, expect if `options.forceRestart` is set.
+     * Then, it kills the running process and starts the emulator again.
+     *
+     * This also creates a new `AbortController` if the current one had been activated.
+     *
+     * @param options
+     *
+     * @returns An `AbortSignal` which is triggered if the emulator crashes.
+     */
     async start(options?: { forceRestart: boolean }) {
         if (!this.name) throw new Error('A name is missing. The emulator was not initialized.');
 
@@ -151,12 +180,14 @@ export class Emulator {
         return this._abortController.signal;
     }
 
+    /** Kills the emulator process if it is running. */
     async kill() {
         await killProcess(this._proc);
         // This prevents a memory leak when we overwrite `this._proc`.
         this._proc?.removeAllListeners();
     }
 
+    /** Deletes and recreates the emulator with the same configuration as the current one. */
     async rebuild() {
         if (!this.name) return;
         if (!this.createOptions)
@@ -172,14 +203,18 @@ export class Emulator {
         this.resetSnapshotName = undefined;
     }
 
+    /** @returns An `AbortSignal` which is triggered if the emulator crashes. */
     getAbortSignal() {
         return this._abortController.signal;
     }
 }
 
 export class EmulatorError extends Error {
+    /** The emulator process’ output in stout and stderr concatenated up until the crash. */
     consoleOutput: string | undefined;
+    /** The command use to start the emulator. */
     emulatorCommand: string | undefined;
+    /** The signal received by the emulator process. */
     signal: string | undefined;
 
     constructor(message: string, context?: { consoleOutput?: string; emulatorCommand?: string; signal?: string }) {

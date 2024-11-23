@@ -18,7 +18,7 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { Emulator, EmulatorError } from './emulator';
+import { AndroidEmulator, EmulatorError } from './emulator';
 import type { MitmproxyEvent } from './util';
 import {
     awaitMitmproxyEvent,
@@ -440,7 +440,7 @@ export async function startAnalysis<
         ),
     };
 
-    let emulator: Emulator | undefined;
+    let emulator: AndroidEmulator | undefined;
     let trafficCollectionInProgress: { startDate: Date; options: TrafficCollectionOptions } | false = false;
     let mitmproxyState:
         | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
@@ -649,7 +649,7 @@ Message of the last error: ${emulator.lastError?.message}`);
                     if (targetOptions?.createEmulator !== undefined || targetOptions?.emulatorName) {
                         // Create or start a new emulator
                         // eslint-disable-next-line require-atomic-updates
-                        emulator = await Emulator.fromRunTarget(targetOptions);
+                        emulator = await AndroidEmulator.fromRunTarget(targetOptions);
                         await emulator.start();
                     }
                 }
