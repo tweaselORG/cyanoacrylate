@@ -317,7 +317,7 @@ export const fileExists = async (path: string) => {
  *
  * @returns A promise which never resolves, but rejects in case the AbortSignal is raised.
  */
-export const rejectOnAbort = (signal: AbortSignal) =>
+export const rejectOnAbort = (signal: AbortSignal): Promise<never> =>
     new Promise((_, rej) => {
         const abortListener = () => {
             signal.removeEventListener('abort', abortListener);

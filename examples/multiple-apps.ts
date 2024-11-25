@@ -4,10 +4,11 @@ import path from 'path';
 import { pause, startAnalysis } from '../src/index';
 
 // You can pass the following command line arguments:
-// `npx tsx examples/multiple-apps.ts <emulator name> <snapshot name> <path to a folder of single APKs>`
+// `npx tsx examples/multiple-apps.ts <path to a folder of single APKs> <emulator name> <snapshot name> `
 
 (async () => {
     const apkFolder = process.argv[2];
+    // If you do not specify these, cyanoacrylate will just create and manage its own emulator, prefixed `cyanoacrylate-test-`.
     const emulatorName = process.argv[3];
     const snapshotName = process.argv[4];
 
@@ -33,8 +34,6 @@ import { pause, startAnalysis } from '../src/index';
                       },
                   },
     });
-
-    await analysis.ensureDevice();
 
     // The library was designed to do this for many apps in one go,
     // so you can easily loop through an array of apps.

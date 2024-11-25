@@ -10,13 +10,33 @@ import { execa, type ExecaChildProcess, type ExecaError } from 'execa';
 import type { AndroidEmulatorRunTargetOptions, SupportedCapability, SupportedPlatform } from '.';
 import { killProcess } from './util';
 
-/** Uses `avdmanager` to list currently existing emulators. */
+/** Uses `avdmanager -c` to list currently existing and working emulators. */
 export const listEmulators = async () => {
     // -c makes avdmanager return just a list of names separated by newlines.
+    // Apparently, this only includes emulators which avdmanager does not consider broken (https://github.com/tweaselORG/cyanoacrylate/pull/55/files/2119d02fc5f21c49aed2c82f02ed6b8df19862ba#r1856000182).
     const { stdout } = await runAndroidDevTool('avdmanager', ['list', 'avd', '-c']);
     return stdout.split('\n');
 };
 
+/**
+ * Deletes the emulator using `avdmanager`.
+ *
+ * @param emulatorName The emulator to delete.
+ *
+ * @returns A promise which will resolve if the emulator was deleted and reject if it failed.
+ */
+export const deleteEmulator = async (emulatorName: string) => {
+    const { env } = await ensureSdkmanager();
+    const toolPath = await getAndroidDevToolPath('avdmanager');
+
+    return execa(toolPath, ['delete', 'avd', '--name', emulatorName], { env, reject: true });
+};
+
+/**
+ * Lists the available snapshots for each emulator. This only works with emulator versions 35 and higher.
+ *
+ * @returns An object with the device name as a keys and an array of snapshot names as a value.
+ */
 export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => {
     // This returns a list of snapshots of all devices
     const { stdout } = await runAndroidDevTool('emulator', ['-snapshot-list']);
@@ -36,6 +56,7 @@ export const snapshotHasCapabilties = <Platform extends SupportedPlatform>(
     return capabilityString && capabilityString === capabilities.sort().join('_');
 };
 
+/** Delete a snapshot of the currently running emulator. */
 export const deleteSnapshot = (snapshotName: string) =>
     runAndroidDevTool('adb', ['emu', 'avd', 'snapshot', 'delete', snapshotName]);
 
@@ -52,7 +73,7 @@ export class AndroidEmulator {
      */
     resetSnapshotName: string | undefined;
     /**
-     * Number of runs in which the emulator encountered an error and crashed du to it. This is reset if you rebuild the
+     * Number of runs in which the emulator encountered an error and crashed due to it. This is reset if you rebuild the
      * emulator.
      */
     failedStarts = 0;
@@ -70,7 +91,7 @@ export class AndroidEmulator {
     /** This is true, if the emulator process stopped. The reverse is not necessarily the case. */
     hasExited = false;
 
-    constructor() {
+    private constructor() {
         this._abortController = new AbortController();
     }
 
@@ -96,7 +117,8 @@ export class AndroidEmulator {
                         .filter((emu) => !!emu.hash)
                         .map(async (emu) => {
                             if (emu.hash === optionsHash) return emu.name;
-                            await deleteEmulator(emu.name);
+                            // Make sure we only delete emulators we created ourselves.
+                            if (emu.name.startsWith('cyanoacrylate-')) await deleteEmulator(emu.name);
                             return undefined;
                         })
                 )
@@ -157,19 +179,22 @@ export class AndroidEmulator {
         this._proc = execa(toolPath, ['-avd', this.name, ...this.startArgs], { env, reject: true });
         this._proc.catch(async (error: ExecaError) => {
             if (error.signal === 'SIGTERM') return; // The process was killed intentionally.
+
+            this.failedStarts++;
+            this.lastError = error;
+            if (!error.killed && !error.isCanceled) await killProcess(this._proc);
+
             if (error.stdout?.includes('Failed to load snapshot')) {
                 // We are trying to load a snapshot
-                if (error.stdout.includes('The snapshot requires the feature'))
+                if (error.stdout.includes('The snapshot requires the feature')) {
                     this._abortController.abort(
                         new EmulatorError(
                             `Loading the emulator state failed. Maybe you are trying to load a snapshot from a different emulator configuration (e.g. headless mode)?`
                         )
                     );
+                    return;
+                }
             }
-
-            this.failedStarts++;
-            this.lastError = error;
-            if (!error.killed && !error.isCanceled) await killProcess(this._proc);
             // We need to rethrow the error in this context to halt execution.
             this._abortController.abort(EmulatorError.fromExecaError(error));
         });
@@ -212,7 +237,7 @@ export class AndroidEmulator {
 export class EmulatorError extends Error {
     /** The emulator process’ output in stout and stderr concatenated up until the crash. */
     consoleOutput: string | undefined;
-    /** The command use to start the emulator. */
+    /** The command used to start the emulator. */
     emulatorCommand: string | undefined;
     /** The signal received by the emulator process. */
     signal: string | undefined;
@@ -233,13 +258,3 @@ export class EmulatorError extends Error {
         });
     }
 }
-
-export const deleteEmulator = async (emulatorName: string) => {
-    const { env } = await ensureSdkmanager();
-    const toolPath = await getAndroidDevToolPath('avdmanager');
-
-    return execa(toolPath, ['delete', 'avd', '--name', emulatorName], {
-        env,
-        reject: true,
-    });
-};
