@@ -73,7 +73,52 @@ The following example collects the traffic for an app in the Android emulator. I
 })();
 ```
 
-Take a look at the [`examples/`](examples) folder for some more examples of how to use cyanoacrylate.
+### Use with multiple apps
+
+This library was designed in particular to enable long running analyses of many apps. If you want to do that, make sure to run `analysis.ensureDevice()` before every new app analysis, because it deals with any problems with the device and in particular emulator which might have come up in a previous analysis. If you leave the emulator management to cyanoacrylate, we might even rebuild the emulator completely from scratch. Also, you should wrap the app analysis in a `try {} catch () {}`-block, to catch any errors occurring in the emulator, which could be fixed by `ensureDevice`in a later run. The basic structure of an analysis might look like this:
+
+```ts
+const analysis = await startAnalysis({
+    platform: 'android',
+    runTarget: 'emulator',
+    capabilities: [],
+
+    targetOptions: {
+        // Let cyanoacrylate handle all the emulator stuff.
+        createEmulator: {
+            infix: 'test',
+            variant: 'google_apis',
+            architecture: 'x86_64',
+            attemptRebuilds: 0,
+            apiLevel: 33,
+        },
+    },
+});
+
+for (const app of apps) {
+    // Start the emulator and ensure that everything is set up correctly.
+    try {
+        await analysis.ensureDevice();
+
+        const appAnalysis = await analysis.startAppAnalysis(app);
+
+        // Do the app analysis, e.g. install the app, collect traffic…
+
+        const analysisResults = await appAnalysis.stop();
+        // Do something with the result.
+    } catch (error) {
+        if(typeof error === 'EmulatorError') {
+            // Handle the error, e.g. by adding the app back to the queue if you want to try again.
+            // EmulatorErrors are not always recoverable, though, so be careful not to create an infinite loop.
+        }
+    }
+    
+}
+
+await analysis.stop();
+```
+
+Take a look at [`examples/mutiple-apps.ts`](examples/multiple-apps.ts) for a full working example.
 
 ## Additional metadata in exported HAR files
 
