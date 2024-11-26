@@ -23,13 +23,15 @@ import { pause, startAnalysis } from '../src/index';
                 ? {
                       snapshotName,
                       emulatorName,
+                      managed: false,
                   }
                 : {
-                      createEmulator: {
-                          infix: 'test',
+                      managed: true,
+                      infix: 'test',
+                      attemptRebuilds: 0,
+                      createEmulatorOptions: {
                           variant: 'google_apis',
                           architecture: 'x86_64',
-                          attemptRebuilds: 0,
                           apiLevel: 33,
                       },
                   },

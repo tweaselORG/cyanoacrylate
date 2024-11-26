@@ -80,7 +80,7 @@ export class AndroidEmulator {
     /** The error which produced the most recent crash. */
     lastError: ExecaError | undefined;
     /** Whether the emulator is managed by cyanoacrylate completely. */
-    createdByLib = false;
+    managed = false;
     /**
      * The options for `createEmulator()` used to create this emulator. Will be `undefined` if `createdByLib` is
      * `false`.
@@ -99,8 +99,9 @@ export class AndroidEmulator {
     static async fromRunTarget(emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions): Promise<AndroidEmulator> {
         const emulator = new AndroidEmulator();
 
-        if (emulatorRunTargetOptions.createEmulator) {
-            const { infix, ...emulatorOptions } = emulatorRunTargetOptions.createEmulator;
+        if (emulatorRunTargetOptions.managed) {
+            const infix = emulatorRunTargetOptions.infix;
+            const emulatorOptions = emulatorRunTargetOptions.createEmulatorOptions;
             emulator.createOptions = emulatorOptions;
 
             const optionsHash = createHash('md5').update(JSON.stringify(emulatorOptions)).digest('hex');
@@ -132,7 +133,7 @@ export class AndroidEmulator {
                 // emulator.resetSnapshotName = snapshotList?.find((s) => s.startsWith('cyanoacrylate-ensured'));
             } else await createEmulator(emulator.name, emulatorOptions);
 
-            emulator.createdByLib = true;
+            emulator.managed = true;
         } else if (emulatorRunTargetOptions.emulatorName) {
             emulator.name = emulatorRunTargetOptions.emulatorName;
             emulator.resetSnapshotName = emulatorRunTargetOptions.snapshotName;

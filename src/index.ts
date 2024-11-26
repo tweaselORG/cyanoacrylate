@@ -116,16 +116,16 @@ export type Analysis<
      *
      * On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is
      * chosen.
-     *
-     * @param options An object with the following optional options:
-     *
-     *   - `killExisting`: DEPRECATED: Whether to kill the emulator process (and then restart) the emulator if it is already
-     *       running (default: `false`).
-     *   - `forceRestart`: Whether to force restarting the emulator if it is already running (default: `false`).
-     *   - `skipReset`: This skips resetting the emulator in ensureDevice to speed up ensuring for reused emulators
-     *       (default: `false`).
      */
-    ensureDevice: (options?: { killExisting?: boolean; forceRestart?: boolean; skipReset?: boolean }) => Promise<void>;
+    ensureDevice: (options?: {
+        /**
+         * @deprecated Deprecated, use `forceRestart` instead. Whether to kill the emulator process (and then restart)
+         *   the emulator if it is already running (default: `false`).
+         */
+        killExisting?: boolean;
+        /** Whether to force restarting the emulator if it is already running (default: `false`). */
+        forceRestart?: boolean;
+    }) => Promise<void>;
     /**
      * Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is
      * interfering with the results.
@@ -282,8 +282,8 @@ export type AppAnalysisResult = {
     mitmproxyEvents: MitmproxyEvent[];
 };
 
-/** Options for the emulator if you want it to be automatically managed by this library. */
-type StartEmulatorOptions = {
+/** Options to configure how the emulator should be started with the `emulator` command. */
+export type StartEmulatorOptions = {
     /** Whether to start the emulator in headless mode (default: `false`). */
     headless?: boolean;
     /** Whether to start the emulator with audio (default: `false`). */
@@ -307,28 +307,27 @@ type StartEmulatorOptions = {
 
 export type AndroidEmulatorRunTargetOptions = (
     | {
-          /** The name of the emulator to start. */
-          emulatorName?: never;
-          /** If set, creates an emulator specific for the analysis. Can not be set if `emulatorName` is set. */
-          createEmulator: EmulatorOptions & {
-              /**
-               * An infix to distinguish the emulator from other ones created by cyanoacrylate. The created emulator
-               * will be named `cyanoacrylate-{infix}-{md5 hash of the options}`.
-               */
-              infix: string;
-              /**
-               * How often to try rebuilding the emulator completely in case of an error.
-               *
-               * @default 0
-               */
-              attemptRebuilds?: number;
-          };
+          /** Whether the emulator should be created and managed by cyanoacrylate. */
+          managed: true;
+          /**
+           * An infix to distinguish the emulator from other ones created by cyanoacrylate. The created emulator will be
+           * named `cyanoacrylate-{infix}-{md5 hash of the options}`.
+           */
+          infix: string;
+          /** The options to create the emulator with. */
+          createEmulatorOptions: EmulatorOptions;
+          /**
+           * How often to try rebuilding the emulator completely in case of an error.
+           *
+           * @default 0
+           */
+          attemptRebuilds?: number;
       }
     | {
           /** The name of the emulator to start. */
           emulatorName?: string;
-          /** If set, creates an emulator specific for the analysis. Can not be set if `emulatorName` is set. */
-          createEmulator?: never;
+          /** Whether the emulator should be created and managed by cyanoacrylate. */
+          managed?: false;
       }
 ) & {
     /** The name of a snapshot to use when resetting the emulator. */
@@ -475,7 +474,7 @@ export async function startAnalysis<
             harOutputPath,
             events: [],
         };
-        onMitmproxyEvent(mitmproxyState?.proc, (msg) => {
+        onMitmproxyEvent(mitmproxyState.proc, (msg) => {
             mitmproxyState?.events.push(msg);
         });
 
@@ -618,7 +617,7 @@ export async function startAnalysis<
         platform,
 
         async ensureDevice(ensureOptions) {
-            // This is to support legacy code and will be deprecated in a future version.
+            // This is to support legacy code and will be removed in a future version.
             if (ensureOptions?.killExisting) await emulator?.kill();
 
             // Start the emulator if necessary and a name or config was provided.
@@ -631,11 +630,12 @@ export async function startAnalysis<
                 // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
                 if (emulator) {
                     // The emulator is not running anymore, but has already been created. We are restarting.
-                    if (emulator.failedStarts < (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1) + 1) {
+                    if (emulator.failedStarts <= (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1)) {
                         await emulator.start({ forceRestart: !!ensureOptions?.forceRestart });
                     } else if (
-                        emulator.createdByLib &&
-                        emulator.rebuilds < (targetOptions?.createEmulator?.attemptRebuilds ?? 0)
+                        targetOptions?.managed &&
+                        emulator.managed &&
+                        emulator.rebuilds < (targetOptions?.attemptRebuilds ?? 0)
                     ) {
                         await emulator.rebuild();
                         await emulator.start();
@@ -646,7 +646,7 @@ Attempted rebuilds: ${emulator.rebuilds}
 Message of the last error: ${emulator.lastError?.message}`);
                     }
                 } else if (!emulator) {
-                    if (targetOptions?.createEmulator !== undefined || targetOptions?.emulatorName) {
+                    if (targetOptions?.managed || targetOptions?.emulatorName) {
                         // Create or start a new emulator
                         // eslint-disable-next-line require-atomic-updates
                         emulator = await AndroidEmulator.fromRunTarget(targetOptions);
@@ -659,26 +659,22 @@ Message of the last error: ${emulator.lastError?.message}`);
 
                 await Promise.race([
                     (async () => {
-                        await platform.waitForDevice(150, abortSignal);
+                        await platform.waitForDevice(150, { abortSignal });
 
-                        // If we are coming from `resetDevice` we should skip this, as it will also do this again.
-                        if (!ensureOptions?.skipReset && emulator?.resetSnapshotName)
-                            await timeout(
-                                platform.resetDevice(emulator?.resetSnapshotName, emulator?.getAbortSignal()),
-                                {
-                                    milliseconds: 5 * 60 * 1000,
-                                    signal: emulator?.getAbortSignal(),
-                                }
-                            );
+                        if (emulator?.resetSnapshotName)
+                            await timeout(platform.resetDevice(emulator?.resetSnapshotName, { abortSignal }), {
+                                milliseconds: 5 * 60 * 1000,
+                                signal: abortSignal,
+                            });
 
-                        await platform.ensureDevice(abortSignal);
+                        await platform.ensureDevice({ abortSignal });
 
-                        if (emulator?.createdByLib && !emulator?.resetSnapshotName) {
+                        if (emulator?.managed && !emulator?.resetSnapshotName) {
                             // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
                             const snapshotName = 'cyanoacrylate-ensured';
                             await (
                                 platform as unknown as PlatformApi<'android', 'emulator', [], []>
-                            ).snapshotDeviceState(snapshotName, emulator?.getAbortSignal());
+                            ).snapshotDeviceState(snapshotName, { abortSignal });
 
                             // eslint-disable-next-line require-atomic-updates
                             emulator.resetSnapshotName = snapshotName;
@@ -722,25 +718,12 @@ Message of the last error: ${emulator.lastError?.message}`);
 
             const snapshotName = emulator?.resetSnapshotName;
             if (!snapshotName) throw new Error('Cannot reset device: No snapshot name specified.');
+            const abortSignal = emulator?.getAbortSignal();
+            abortSignal?.throwIfAborted();
 
-            return timeout(platform.resetDevice(snapshotName, emulator?.getAbortSignal()), {
+            return timeout(platform.resetDevice(snapshotName, { abortSignal }), {
                 milliseconds: 5 * 60 * 1000,
-                signal: emulator?.getAbortSignal(),
-            }).catch(async (err) => {
-                if (!(err instanceof TimeoutError)) throw err;
-
-                // Sometimes, the Android emulator gets stuck and doesn't accept any commands anymore. In this case, we
-                // restart it.
-                // TODO: Maybe we want this to call `emulator.start({forceRestart: true})` directly? We could get rid of another `ensureDevice` this way.
-                await timeout((await this).ensureDevice({ forceRestart: true, skipReset: true }), {
-                    milliseconds: 60 * 1000,
-                    signal: emulator?.getAbortSignal(),
-                });
-                emulator?.getAbortSignal().throwIfAborted();
-                await timeout(platform.resetDevice(snapshotName, emulator?.getAbortSignal()), {
-                    milliseconds: 5 * 60 * 1000,
-                    signal: emulator?.getAbortSignal(),
-                });
+                signal: abortSignal,
             });
         },
         startAppAnalysis: async (appIdOrPath, options) => {
