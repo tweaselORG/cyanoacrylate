@@ -77,6 +77,8 @@ export class AndroidEmulator {
      * emulator.
      */
     failedStarts = 0;
+    /** How often to try restarting. */
+    restartLimit = 0;
     /** The error which produced the most recent crash. */
     lastError: ExecaError | undefined;
     /** Whether the emulator is managed by cyanoacrylate completely. */
@@ -88,6 +90,8 @@ export class AndroidEmulator {
     createOptions: EmulatorOptions | undefined;
     /** How many times this emulator was deleted and newly created in the current session. */
     rebuilds = 0;
+    /** How often to try rebuilding. */
+    rebuildsLimit = 0;
     /** This is true, if the emulator process stopped. The reverse is not necessarily the case. */
     hasExited = false;
 
@@ -100,15 +104,22 @@ export class AndroidEmulator {
         const emulator = new AndroidEmulator();
 
         if (emulatorRunTargetOptions.managed) {
-            const infix = emulatorRunTargetOptions.infix;
-            const emulatorOptions = emulatorRunTargetOptions.createEmulatorOptions;
+            const key = emulatorRunTargetOptions.managedEmulatorOptions.key;
+            // This is the maximum config which will work with arm and x86 apps on x86 CPUs (see: https://github.com/tweaselORG/appstraction/issues/54)
+            const emulatorOptions = emulatorRunTargetOptions.managedEmulatorOptions.createEmulatorOptions || {
+                apiLevel: 30,
+                variant: 'google_apis',
+                architecture: 'x86_64',
+            };
             emulator.createOptions = emulatorOptions;
+            emulator.rebuildsLimit = emulatorRunTargetOptions.managedEmulatorOptions.attemptRebuilds ?? 0;
+            emulator.restartLimit = emulatorRunTargetOptions.startEmulatorOptions?.attemptRestarts ?? 1;
 
             const optionsHash = createHash('md5').update(JSON.stringify(emulatorOptions)).digest('hex');
 
-            emulator.name = `cyanoacrylate-${infix}-${optionsHash}`;
+            emulator.name = `cyanoacrylate-${key}-${optionsHash}`;
 
-            const emuNameRegex = new RegExp(`cyanoacrylate-${infix}-(.*)`);
+            const emuNameRegex = new RegExp(`cyanoacrylate-${key}-(.*)`);
 
             const emulatorList = await listEmulators();
             const existingEmulators = (
@@ -134,9 +145,10 @@ export class AndroidEmulator {
             } else await createEmulator(emulator.name, emulatorOptions);
 
             emulator.managed = true;
-        } else if (emulatorRunTargetOptions.emulatorName) {
-            emulator.name = emulatorRunTargetOptions.emulatorName;
+        } else if (emulatorRunTargetOptions.startEmulatorOptions) {
+            emulator.name = emulatorRunTargetOptions.startEmulatorOptions.emulatorName;
             emulator.resetSnapshotName = emulatorRunTargetOptions.snapshotName;
+            emulator.restartLimit = emulatorRunTargetOptions.startEmulatorOptions.attemptRestarts ?? 1;
         } else throw new Error('Could not start emulator: No emulator config or name.');
 
         const startEmulatorOptions = emulatorRunTargetOptions.startEmulatorOptions;
@@ -163,6 +175,16 @@ export class AndroidEmulator {
      */
     async start(options?: { forceRestart: boolean }) {
         if (!this.name) throw new Error('A name is missing. The emulator was not initialized.');
+
+        // Check if we already failed too often and rebuild of block starting in that case.
+        if (this.failedStarts > this.restartLimit) {
+            if (this.rebuilds <= this.rebuildsLimit) await this.rebuild();
+            else
+                throw new EmulatorError(`The emulator cannot be restarted after a failed run, because the restart and rebuild limits have been reached. Your emulator configuration is likely broken.
+Failed starts of the current build: ${this.failedStarts}
+Attempted rebuilds: ${this.rebuilds}
+Message of the last error: ${this.lastError?.message}`);
+        }
 
         if (options?.forceRestart && !this.hasExited && this._proc) {
             // We can do this, since `this.start()` throws away the previous process and its listeners.

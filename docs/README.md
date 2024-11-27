@@ -8,6 +8,10 @@ cyanoacrylate
 
 - [Analysis](README.md#analysis)
 - [AnalysisOptions](README.md#analysisoptions)
+- [AndroidEmulatorRunTargetOptions](README.md#androidemulatorruntargetoptions)
+- [AndroidEmulatorRunTargetOptionsManaged](README.md#androidemulatorruntargetoptionsmanaged)
+- [AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted](README.md#androidemulatorruntargetoptionsunmanagedselfstarted)
+- [AndroidEmulatorRunTargetOptionsUnmanagedStarted](README.md#androidemulatorruntargetoptionsunmanagedstarted)
 - [AndroidPermission](README.md#androidpermission)
 - [App](README.md#app)
 - [AppAnalysis](README.md#appanalysis)
@@ -94,7 +98,102 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:373](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L373)
+[src/index.ts:437](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L437)
+
+___
+
+### AndroidEmulatorRunTargetOptions
+
+Ƭ **AndroidEmulatorRunTargetOptions**: [`AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted`](README.md#androidemulatorruntargetoptionsunmanagedselfstarted) \| [`AndroidEmulatorRunTargetOptionsUnmanagedStarted`](README.md#androidemulatorruntargetoptionsunmanagedstarted) \| [`AndroidEmulatorRunTargetOptionsManaged`](README.md#androidemulatorruntargetoptionsmanaged)
+
+Run target options for an Android emulator. You can choose between the following variants:
+
+- The emulator is completely created, managed, and started automatically by cyanoacrylate. You declaratively specify
+  the parameters of the emulator and cyanoacrylate ensures that an emulator matching those parameters is available
+  after you run `analysis.ensureDevice()`.
+
+  It also automatically creates a snapshot of the emulator in a clean state for you that you can revert to using
+  `analysis.resetDevice()`. You can optionally specify honey data that should be placed on the emulator before the
+  snapshot is created.
+
+  Use [AndroidEmulatorRunTargetOptionsManaged](README.md#androidemulatorruntargetoptionsmanaged).
+- You create and manage the emulator as well as the snapshot (if desired) yourself but cyanoacrylate automatically
+  starts it for you. It also takes care to restart the emulator if necessary whenever you run
+  `analysis.ensureDevice()`.
+
+  Use [AndroidEmulatorRunTargetOptionsUnmanagedStarted](README.md#androidemulatorruntargetoptionsunmanagedstarted).
+- You create, manage, and start the emulator as well as the snapshot (if desired) yourself and cyanoacrylate does not
+  touch it. You have to ensure yourself that the emulator is working and running. Use
+  [AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted](README.md#androidemulatorruntargetoptionsunmanagedselfstarted).
+
+#### Defined in
+
+[src/index.ts:398](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L398)
+
+___
+
+### AndroidEmulatorRunTargetOptionsManaged
+
+Ƭ **AndroidEmulatorRunTargetOptionsManaged**: `Object`
+
+Run target options for an Android emulator that is created, managed, and started automatically by cyanoacrylate.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `managed` | ``true`` | Whether the emulator should be created and managed by cyanoacrylate. |
+| `managedEmulatorOptions` | { `attemptRebuilds?`: `number` ; `createEmulatorOptions?`: `EmulatorOptions` ; `key`: `string`  } | Options to configure how the emulator should be created by cyanoacrylate. |
+| `managedEmulatorOptions.attemptRebuilds?` | `number` | How often to try rebuilding the emulator completely in case of an error. **`Default`** 0 |
+| `managedEmulatorOptions.createEmulatorOptions?` | `EmulatorOptions` | Which kind of emulator to create. |
+| `managedEmulatorOptions.key` | `string` | A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the options}`. |
+| `snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
+| `startEmulatorOptions?` | [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options to configure how the emulator should be started by cyanoacrylate. |
+
+#### Defined in
+
+[src/index.ts:335](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L335)
+
+___
+
+### AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted
+
+Ƭ **AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted**: `Object`
+
+Run target options for an Android emulator that the user creates, manages, and starts themselves.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `managed?` | ``false`` | Whether the emulator should be created and managed by cyanoacrylate. |
+| `snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
+| `startEmulatorOptions?` | `undefined` | - |
+
+#### Defined in
+
+[src/index.ts:309](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L309)
+
+___
+
+### AndroidEmulatorRunTargetOptionsUnmanagedStarted
+
+Ƭ **AndroidEmulatorRunTargetOptionsUnmanagedStarted**: `Object`
+
+Run target options for an Android emulator that the user creates and manages themselves but that is automatically
+started by cyanoacrylate.
+
+#### Type declaration
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `managed?` | ``false`` | Whether the emulator should be created and managed by cyanoacrylate. |
+| `snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
+| `startEmulatorOptions` | { `emulatorName`: `string`  } & [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options to configure how the emulator should be started by cyanoacrylate. |
+
+#### Defined in
+
+[src/index.ts:321](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L321)
 
 ___
 
@@ -497,9 +596,9 @@ The options for a specific platform/run target combination.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `android` | { `device`: `unknown` ; `emulator`: `AndroidEmulatorRunTargetOptions`  } | The options for the Android platform. |
+| `android` | { `device`: `unknown` ; `emulator`: [`AndroidEmulatorRunTargetOptions`](README.md#androidemulatorruntargetoptions)  } | The options for the Android platform. |
 | `android.device` | `unknown` | The options for the Android physical device run target. |
-| `android.emulator` | `AndroidEmulatorRunTargetOptions` | The options for the Android emulator run target. |
+| `android.emulator` | [`AndroidEmulatorRunTargetOptions`](README.md#androidemulatorruntargetoptions) | The options for the Android emulator run target. |
 | `ios` | { `device`: { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } ; `emulator`: `never`  } | The options for the iOS platform. |
 | `ios.device` | { `ip?`: `string` ; `password?`: `string` ; `port?`: `number` ; `proxyIp`: `string` ; `username?`: ``"mobile"`` \| ``"root"``  } | The options for the iOS physical device run target. |
 | `ios.device.ip?` | `string` | The device's IP address. If none is given, a connection via USB port forwarding is attempted. |
@@ -511,7 +610,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:341](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L341)
+[src/index.ts:405](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L405)
 
 ___
 
@@ -716,4 +815,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:407](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L407)
+[src/index.ts:471](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L471)

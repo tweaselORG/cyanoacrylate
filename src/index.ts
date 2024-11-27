@@ -18,7 +18,7 @@ import { join } from 'path';
 import process from 'process';
 import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
-import { AndroidEmulator, EmulatorError } from './emulator';
+import { AndroidEmulator } from './emulator';
 import type { MitmproxyEvent } from './util';
 import {
     awaitMitmproxyEvent,
@@ -305,36 +305,100 @@ export type StartEmulatorOptions = {
     attemptRestarts?: number;
 };
 
-export type AndroidEmulatorRunTargetOptions = (
-    | {
-          /** Whether the emulator should be created and managed by cyanoacrylate. */
-          managed: true;
-          /**
-           * An infix to distinguish the emulator from other ones created by cyanoacrylate. The created emulator will be
-           * named `cyanoacrylate-{infix}-{md5 hash of the options}`.
-           */
-          infix: string;
-          /** The options to create the emulator with. */
-          createEmulatorOptions: EmulatorOptions;
-          /**
-           * How often to try rebuilding the emulator completely in case of an error.
-           *
-           * @default 0
-           */
-          attemptRebuilds?: number;
-      }
-    | {
-          /** The name of the emulator to start. */
-          emulatorName?: string;
-          /** Whether the emulator should be created and managed by cyanoacrylate. */
-          managed?: false;
-      }
-) & {
+/** Run target options for an Android emulator that the user creates, manages, and starts themselves. */
+export type AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted = {
+    startEmulatorOptions?: undefined;
     /** The name of a snapshot to use when resetting the emulator. */
     snapshotName?: string;
-    /** Options for the emulator if you want it to be automatically managed by this library. */
+
+    /** Whether the emulator should be created and managed by cyanoacrylate. */
+    managed?: false;
+};
+/**
+ * Run target options for an Android emulator that the user creates and manages themselves but that is automatically
+ * started by cyanoacrylate.
+ */
+export type AndroidEmulatorRunTargetOptionsUnmanagedStarted = {
+    /** Options to configure how the emulator should be started by cyanoacrylate. */
+    startEmulatorOptions: {
+        /** The name of the emulator to start. */
+        emulatorName: string;
+    } & StartEmulatorOptions;
+
+    /** The name of a snapshot to use when resetting the emulator. */
+    snapshotName?: string;
+
+    /** Whether the emulator should be created and managed by cyanoacrylate. */
+    managed?: false;
+};
+/** Run target options for an Android emulator that is created, managed, and started automatically by cyanoacrylate. */
+export type AndroidEmulatorRunTargetOptionsManaged = {
+    /** Options to configure how the emulator should be created by cyanoacrylate. */
+    managedEmulatorOptions: {
+        /**
+         * A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key
+         * will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the options}`.
+         */
+        key: string;
+
+        /** Which kind of emulator to create. */
+        createEmulatorOptions?: EmulatorOptions;
+
+        // /** @unimplemented Optional honey data to place on the device before creating the snapshot. */
+        // honeyData?: {
+        //     /** The device name to set, which shows up to other network or bluetooth devices. */
+        //     deviceName?: string;
+        //     /** Content to put into the clipboard. */
+        //     clipboard?: string;
+        //     /** Calendar events to place on the device. */
+        //     calendarEvents?: CalendarEventData[];
+        //     /** Contacts to place on the device. */
+        //     contacts?: ContactData[];
+        // };
+
+        /**
+         * How often to try rebuilding the emulator completely in case of an error.
+         *
+         * @default 0
+         */
+        attemptRebuilds?: number;
+    };
+
+    /** Whether the emulator should be created and managed by cyanoacrylate. */
+    managed: true;
+
+    /** The name of a snapshot to use when resetting the emulator. */
+    snapshotName?: string;
+
+    /** Options to configure how the emulator should be started by cyanoacrylate. */
     startEmulatorOptions?: StartEmulatorOptions;
 };
+
+/**
+ * Run target options for an Android emulator. You can choose between the following variants:
+ *
+ * - The emulator is completely created, managed, and started automatically by cyanoacrylate. You declaratively specify
+ *   the parameters of the emulator and cyanoacrylate ensures that an emulator matching those parameters is available
+ *   after you run `analysis.ensureDevice()`.
+ *
+ *   It also automatically creates a snapshot of the emulator in a clean state for you that you can revert to using
+ *   `analysis.resetDevice()`. You can optionally specify honey data that should be placed on the emulator before the
+ *   snapshot is created.
+ *
+ *   Use {@link AndroidEmulatorRunTargetOptionsManaged}.
+ * - You create and manage the emulator as well as the snapshot (if desired) yourself but cyanoacrylate automatically
+ *   starts it for you. It also takes care to restart the emulator if necessary whenever you run
+ *   `analysis.ensureDevice()`.
+ *
+ *   Use {@link AndroidEmulatorRunTargetOptionsUnmanagedStarted}.
+ * - You create, manage, and start the emulator as well as the snapshot (if desired) yourself and cyanoacrylate does not
+ *   touch it. You have to ensure yourself that the emulator is working and running. Use
+ *   {@link AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted}.
+ */
+export type AndroidEmulatorRunTargetOptions =
+    | AndroidEmulatorRunTargetOptionsUnmanagedSelfStarted
+    | AndroidEmulatorRunTargetOptionsUnmanagedStarted
+    | AndroidEmulatorRunTargetOptionsManaged;
 
 /** The options for a specific platform/run target combination. */
 // Use `unknown` here to mean "no options", and `never` to mean "not supported".
@@ -626,27 +690,11 @@ export async function startAnalysis<
                     | RunTargetOptions['android']['emulator']
                     | undefined;
 
-                // ESLint wrongly thinks an optional chain would be logically equivalent
-                // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
                 if (emulator) {
                     // The emulator is not running anymore, but has already been created. We are restarting.
-                    if (emulator.failedStarts <= (targetOptions?.startEmulatorOptions?.attemptRestarts ?? 1)) {
-                        await emulator.start({ forceRestart: !!ensureOptions?.forceRestart });
-                    } else if (
-                        targetOptions?.managed &&
-                        emulator.managed &&
-                        emulator.rebuilds < (targetOptions?.attemptRebuilds ?? 0)
-                    ) {
-                        await emulator.rebuild();
-                        await emulator.start();
-                    } else {
-                        throw new EmulatorError(`The emulator cannot be restarted after a failed run, because the restart and rebuild limits have been reached. Your emulator configuration is likely broken.
-Failed starts of the current build: ${emulator.failedStarts}
-Attempted rebuilds: ${emulator.rebuilds}
-Message of the last error: ${emulator.lastError?.message}`);
-                    }
-                } else if (!emulator) {
-                    if (targetOptions?.managed || targetOptions?.emulatorName) {
+                    await emulator.start({ forceRestart: !!ensureOptions?.forceRestart });
+                } else {
+                    if (targetOptions?.managed || targetOptions?.startEmulatorOptions) {
                         // Create or start a new emulator
                         // eslint-disable-next-line require-atomic-updates
                         emulator = await AndroidEmulator.fromRunTarget(targetOptions);

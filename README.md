@@ -47,7 +47,9 @@ The following example collects the traffic for an app in the Android emulator. I
 
         targetOptions: {
             snapshotName: '<snapshot name>',
-            emulatorName: '<emulator name>',
+            startEmulatorOptions: {
+                emulatorName: '<emulator name>',
+            }
         },
     });
 
@@ -86,11 +88,8 @@ const analysis = await startAnalysis({
     targetOptions: {
         // Let cyanoacrylate handle all the emulator stuff.
         managed: true,
-        infix: 'test',
-        createEmulatorOptions: {
-            variant: 'google_apis',
-            architecture: 'x86_64',
-            apiLevel: 33,
+        managedEmulatorOptions: {
+            key: 'test',
         },
     },
 });
