@@ -310,22 +310,6 @@ export const fileExists = async (path: string) => {
     }
 };
 
-/**
- * This creates a promise which rejects if the AbortSignal is triggered, for use in `Promise.race`. Do not `await` this.
- *
- * @param signal The signal which should be listened to.
- *
- * @returns A promise which never resolves, but rejects in case the AbortSignal is raised.
- */
-export const rejectOnAbort = (signal: AbortSignal): Promise<never> =>
-    new Promise((_, rej) => {
-        const abortListener = () => {
-            signal.removeEventListener('abort', abortListener);
-            rej(signal.reason);
-        };
-        signal.addEventListener('abort', abortListener);
-    });
-
 /*
 License for the docstrings imported from mitmproxy:
 Copyright (c) 2013, Aldo Cortesi. All rights reserved.

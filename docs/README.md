@@ -78,7 +78,7 @@ Functions that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:105](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L105)
+[src/index.ts:97](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L97)
 
 ___
 
@@ -98,7 +98,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:437](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L437)
+[src/index.ts:428](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L428)
 
 ___
 
@@ -128,7 +128,7 @@ Run target options for an Android emulator. You can choose between the following
 
 #### Defined in
 
-[src/index.ts:398](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L398)
+[src/index.ts:389](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L389)
 
 ___
 
@@ -143,16 +143,18 @@ Run target options for an Android emulator that is created, managed, and started
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `managed` | ``true`` | Whether the emulator should be created and managed by cyanoacrylate. |
-| `managedEmulatorOptions` | { `attemptRebuilds?`: `number` ; `createEmulatorOptions?`: `EmulatorOptions` ; `key`: `string`  } | Options to configure how the emulator should be created by cyanoacrylate. |
-| `managedEmulatorOptions.attemptRebuilds?` | `number` | How often to try rebuilding the emulator completely in case of an error. **`Default`** 0 |
-| `managedEmulatorOptions.createEmulatorOptions?` | `EmulatorOptions` | Which kind of emulator to create. |
-| `managedEmulatorOptions.key` | `string` | A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the options}`. |
-| `snapshotName?` | `string` | The name of a snapshot to use when resetting the emulator. |
+| `managedEmulatorOptions` | { `attemptRebuilds?`: `number` ; `createEmulatorOptions?`: `EmulatorOptions` ; `honeyData?`: { `clipboard?`: `string` ; `deviceName?`: `string`  } ; `key`: `string`  } | Options to configure how the emulator should be created by cyanoacrylate. |
+| `managedEmulatorOptions.attemptRebuilds?` | `number` | How often to try rebuilding the emulator completely in case of an error. **`Default`** 1 |
+| `managedEmulatorOptions.createEmulatorOptions?` | `EmulatorOptions` | Which kind of emulator to create. Defaults to Android 11 (API level 30), Android with Google APIs, x86_64, which allows you to run ARM apps on x86 hosts. **`See`** [https://github.com/tweaselORG/appstraction/issues/54](https://github.com/tweaselORG/appstraction/issues/54) |
+| `managedEmulatorOptions.honeyData?` | { `clipboard?`: `string` ; `deviceName?`: `string`  } | Optional honey data to place on the device before creating the snapshot. |
+| `managedEmulatorOptions.honeyData.clipboard?` | `string` | Content to put into the clipboard. |
+| `managedEmulatorOptions.honeyData.deviceName?` | `string` | The device name to set, which shows up to other network or bluetooth devices. |
+| `managedEmulatorOptions.key` | `string` | A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{SHA1 hash of the options}[-headless]`. |
 | `startEmulatorOptions?` | [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options to configure how the emulator should be started by cyanoacrylate. |
 
 #### Defined in
 
-[src/index.ts:335](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L335)
+[src/index.ts:327](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L327)
 
 ___
 
@@ -172,7 +174,7 @@ Run target options for an Android emulator that the user creates, manages, and s
 
 #### Defined in
 
-[src/index.ts:309](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L309)
+[src/index.ts:301](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L301)
 
 ___
 
@@ -193,7 +195,7 @@ started by cyanoacrylate.
 
 #### Defined in
 
-[src/index.ts:321](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L321)
+[src/index.ts:313](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L313)
 
 ___
 
@@ -205,7 +207,7 @@ An ID of a known permission on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:58
+node_modules/appstraction/dist/index.d.ts:59
 
 ___
 
@@ -229,7 +231,7 @@ Metadata about an app, as returned by parseAppMeta.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:86
+node_modules/appstraction/dist/index.d.ts:87
 
 ___
 
@@ -263,7 +265,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:182](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L182)
+[src/index.ts:174](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L174)
 
 ___
 
@@ -283,7 +285,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:269](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L269)
+[src/index.ts:261](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L261)
 
 ___
 
@@ -301,7 +303,7 @@ A supported attribute for the `getDeviceAttribute()` function, depending on the 
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:494
+node_modules/appstraction/dist/index.d.ts:495
 
 ___
 
@@ -326,7 +328,7 @@ Metadata about the device the analysis was run on.
 
 #### Defined in
 
-[src/index.ts:42](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L42)
+[src/index.ts:34](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L34)
 
 ___
 
@@ -345,7 +347,7 @@ The options for each attribute available through the `getDeviceAttribute()` func
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:496
+node_modules/appstraction/dist/index.d.ts:497
 
 ___
 
@@ -357,7 +359,7 @@ An ID of a known permission on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:62
+node_modules/appstraction/dist/index.d.ts:63
 
 ___
 
@@ -582,7 +584,7 @@ Functions that are available for the platforms.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:117
+node_modules/appstraction/dist/index.d.ts:118
 
 ___
 
@@ -610,7 +612,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:405](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L405)
+[src/index.ts:396](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L396)
 
 ___
 
@@ -634,7 +636,7 @@ Options to configure how the emulator should be started with the `emulator` comm
 
 #### Defined in
 
-[src/index.ts:286](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L286)
+[src/index.ts:278](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L278)
 
 ___
 
@@ -652,7 +654,7 @@ A capability supported by this library.
 
 #### Defined in
 
-[src/index.ts:35](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L35)
+[src/index.ts:27](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L27)
 
 ___
 
@@ -664,7 +666,7 @@ A platform that is supported by this library.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:65
+node_modules/appstraction/dist/index.d.ts:66
 
 ___
 
@@ -682,7 +684,7 @@ A run target that is supported by this library for the given platform.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:67
+node_modules/appstraction/dist/index.d.ts:68
 
 ___
 
@@ -698,7 +700,7 @@ Options for a traffic collection that specifies which apps to collect traffic fr
 
 #### Defined in
 
-[src/index.ts:102](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L102)
+[src/index.ts:94](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L94)
 
 ___
 
@@ -711,7 +713,7 @@ through.
 
 #### Defined in
 
-[src/index.ts:64](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L64)
+[src/index.ts:56](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L56)
 
 ___
 
@@ -735,7 +737,7 @@ Metadata about the traffic collection as included in a [TweaselHar](README.md#tw
 
 #### Defined in
 
-[src/index.ts:71](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L71)
+[src/index.ts:63](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L63)
 
 ## Variables
 
@@ -747,7 +749,7 @@ The IDs of known permissions on Android.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:56
+node_modules/appstraction/dist/index.d.ts:57
 
 ___
 
@@ -759,13 +761,13 @@ The IDs of known permissions on iOS.
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:60
+node_modules/appstraction/dist/index.d.ts:61
 
 ## Functions
 
 ### pause
 
-▸ **pause**(`durationInMs`, `abortSignal?`): `Promise`<`unknown`\>
+▸ **pause**(`durationInMs`, `abortSignal?`): `Promise`<`undefined`\>
 
 Pause for a given duration.
 
@@ -774,15 +776,15 @@ Pause for a given duration.
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `durationInMs` | `number` | The duration to pause for, in milliseconds. |
-| `abortSignal?` | `AbortSignal` | - |
+| `abortSignal?` | `AbortSignal` | Provide a signal to abort the pause. |
 
 #### Returns
 
-`Promise`<`unknown`\>
+`Promise`<`undefined`\>
 
 #### Defined in
 
-node_modules/appstraction/dist/index.d.ts:18
+node_modules/appstraction/dist/index.d.ts:19
 
 ___
 
@@ -815,4 +817,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:471](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L471)
+[src/index.ts:462](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L462)

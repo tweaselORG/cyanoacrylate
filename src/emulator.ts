@@ -5,9 +5,9 @@ import {
     runAndroidDevTool,
     type EmulatorOptions,
 } from 'andromatic';
-import { createHash } from 'crypto';
 import { execa, type ExecaChildProcess, type ExecaError } from 'execa';
-import type { AndroidEmulatorRunTargetOptions, SupportedCapability, SupportedPlatform } from '.';
+import hashObject from 'hash-object';
+import type { AndroidEmulatorRunTargetOptions, SupportedCapability } from '.';
 import { killProcess } from './util';
 
 /** Uses `avdmanager -c` to list currently existing and working emulators. */
@@ -47,15 +47,6 @@ export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => 
     }, {});
 };
 
-export const snapshotHasCapabilties = <Platform extends SupportedPlatform>(
-    snapshotName: string,
-    capabilities: SupportedCapability<Platform>[]
-) => {
-    const snapshotRegex = /^cyanoacrylate-ensured-(.*)$/;
-    const capabilityString = snapshotName.match(snapshotRegex)?.[1];
-    return capabilityString && capabilityString === capabilities.sort().join('_');
-};
-
 /** Delete a snapshot of the currently running emulator. */
 export const deleteSnapshot = (snapshotName: string) =>
     runAndroidDevTool('adb', ['emu', 'avd', 'snapshot', 'delete', snapshotName]);
@@ -83,15 +74,12 @@ export class AndroidEmulator {
     lastError: ExecaError | undefined;
     /** Whether the emulator is managed by cyanoacrylate completely. */
     managed = false;
-    /**
-     * The options for `createEmulator()` used to create this emulator. Will be `undefined` if `createdByLib` is
-     * `false`.
-     */
+    /** The options for `createEmulator()` used to create this emulator. Will be `undefined` if `managed` is `false`. */
     createOptions: EmulatorOptions | undefined;
     /** How many times this emulator was deleted and newly created in the current session. */
     rebuilds = 0;
     /** How often to try rebuilding. */
-    rebuildsLimit = 0;
+    rebuildsLimit = 1;
     /** This is true, if the emulator process stopped. The reverse is not necessarily the case. */
     hasExited = false;
 
@@ -100,7 +88,10 @@ export class AndroidEmulator {
     }
 
     /** Construct an instance of Emulator from the `runTarget` passed to `startAnalysis()`. */
-    static async fromRunTarget(emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions): Promise<AndroidEmulator> {
+    static async fromRunTarget(
+        emulatorRunTargetOptions: AndroidEmulatorRunTargetOptions,
+        capabilities: SupportedCapability<'android'>[]
+    ): Promise<AndroidEmulator> {
         const emulator = new AndroidEmulator();
 
         if (emulatorRunTargetOptions.managed) {
@@ -112,36 +103,51 @@ export class AndroidEmulator {
                 architecture: 'x86_64',
             };
             emulator.createOptions = emulatorOptions;
-            emulator.rebuildsLimit = emulatorRunTargetOptions.managedEmulatorOptions.attemptRebuilds ?? 0;
+            emulator.rebuildsLimit = emulatorRunTargetOptions.managedEmulatorOptions.attemptRebuilds ?? 1;
             emulator.restartLimit = emulatorRunTargetOptions.startEmulatorOptions?.attemptRestarts ?? 1;
 
-            const optionsHash = createHash('md5').update(JSON.stringify(emulatorOptions)).digest('hex');
+            const optionsHash = hashObject(
+                {
+                    emulatorOptions,
+                    honeyData: emulatorRunTargetOptions.managedEmulatorOptions.honeyData,
+                    capabilities,
+                },
+                { algorithm: 'md5' }
+            );
 
-            emulator.name = `cyanoacrylate-${key}-${optionsHash}`;
+            emulator.name = `cyanoacrylate-${key}-${optionsHash}${
+                emulatorRunTargetOptions.startEmulatorOptions?.headless ? '-headless' : ''
+            }`;
 
-            const emuNameRegex = new RegExp(`cyanoacrylate-${key}-(.*)`);
+            const emuNameRegex = new RegExp(`cyanoacrylate-${key}-([a-fA-F0-9]{32})(-headless)?`);
 
             const emulatorList = await listEmulators();
             const existingEmulators = (
                 await Promise.all(
-                    emulatorList
-                        .map((name) => ({ name, hash: name.match(emuNameRegex)?.[1] }))
-                        .filter((emu) => !!emu.hash)
-                        .map(async (emu) => {
-                            if (emu.hash === optionsHash) return emu.name;
-                            // Make sure we only delete emulators we created ourselves.
-                            if (emu.name.startsWith('cyanoacrylate-')) await deleteEmulator(emu.name);
-                            return undefined;
-                        })
+                    emulatorList.map(async (name) => {
+                        const matches = name.match(emuNameRegex);
+                        if (!matches) return;
+
+                        const matchedHash = matches[1];
+                        const headless = matches[2] === '-headless';
+
+                        if (
+                            matchedHash === optionsHash &&
+                            headless === !!emulatorRunTargetOptions.startEmulatorOptions?.headless
+                        )
+                            return name;
+                        // Make sure we only delete emulators we created ourselves.
+                        if (name.startsWith('cyanoacrylate-')) await deleteEmulator(name);
+                        return undefined;
+                    })
                 )
             ).filter((emuName) => !!emuName);
 
             if (existingEmulators.length > 1) throw Error('Emulator name is not unique. This should never happen.');
             else if (existingEmulators.length === 1 && existingEmulators[0]) {
-                // TODO: We skip this for now, until we implement proper management of snapshot states, so that the snapshot has the correct capabilities.
                 // The current emulator exists already in the correct config, lets check for a snapshot.
-                // const snapshotList = (await listSnapshots())[existingEmulators[0]];
-                // emulator.resetSnapshotName = snapshotList?.find((s) => s.startsWith('cyanoacrylate-ensured'));
+                const snapshotList = (await listSnapshots())[existingEmulators[0]];
+                emulator.resetSnapshotName = snapshotList?.find((s) => s.startsWith('cyanoacrylate-ensured'));
             } else await createEmulator(emulator.name, emulatorOptions);
 
             emulator.managed = true;
@@ -176,7 +182,7 @@ export class AndroidEmulator {
     async start(options?: { forceRestart: boolean }) {
         if (!this.name) throw new Error('A name is missing. The emulator was not initialized.');
 
-        // Check if we already failed too often and rebuild of block starting in that case.
+        // Check if we already failed too often and rebuild instead.
         if (this.failedStarts > this.restartLimit) {
             if (this.rebuilds <= this.rebuildsLimit) await this.rebuild();
             else

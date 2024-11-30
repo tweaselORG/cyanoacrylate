@@ -20,15 +20,7 @@ import { temporaryFile } from 'tempy';
 import { ensurePythonDependencies } from '../scripts/common/python';
 import { AndroidEmulator } from './emulator';
 import type { MitmproxyEvent } from './util';
-import {
-    awaitMitmproxyEvent,
-    awaitProcessClose,
-    dnsLookup,
-    fileExists,
-    killProcess,
-    onMitmproxyEvent,
-    rejectOnAbort,
-} from './util';
+import { awaitMitmproxyEvent, awaitProcessClose, dnsLookup, fileExists, killProcess, onMitmproxyEvent } from './util';
 import { cyanoacrylateVersion } from './version.gen';
 
 /** A capability supported by this library. */
@@ -337,38 +329,37 @@ export type AndroidEmulatorRunTargetOptionsManaged = {
     managedEmulatorOptions: {
         /**
          * A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key
-         * will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the options}`.
+         * will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{SHA1 hash of the
+         * options}[-headless]`.
          */
         key: string;
 
-        /** Which kind of emulator to create. */
+        /**
+         * Which kind of emulator to create. Defaults to Android 11 (API level 30), Android with Google APIs, x86_64,
+         * which allows you to run ARM apps on x86 hosts.
+         *
+         * @see {@link https://github.com/tweaselORG/appstraction/issues/54}
+         */
         createEmulatorOptions?: EmulatorOptions;
 
-        // /** @unimplemented Optional honey data to place on the device before creating the snapshot. */
-        // honeyData?: {
-        //     /** The device name to set, which shows up to other network or bluetooth devices. */
-        //     deviceName?: string;
-        //     /** Content to put into the clipboard. */
-        //     clipboard?: string;
-        //     /** Calendar events to place on the device. */
-        //     calendarEvents?: CalendarEventData[];
-        //     /** Contacts to place on the device. */
-        //     contacts?: ContactData[];
-        // };
+        /** Optional honey data to place on the device before creating the snapshot. */
+        honeyData?: {
+            /** The device name to set, which shows up to other network or bluetooth devices. */
+            deviceName?: string;
+            /** Content to put into the clipboard. */
+            clipboard?: string;
+        };
 
         /**
          * How often to try rebuilding the emulator completely in case of an error.
          *
-         * @default 0
+         * @default 1
          */
         attemptRebuilds?: number;
     };
 
     /** Whether the emulator should be created and managed by cyanoacrylate. */
     managed: true;
-
-    /** The name of a snapshot to use when resetting the emulator. */
-    snapshotName?: string;
 
     /** Options to configure how the emulator should be started by cyanoacrylate. */
     startEmulatorOptions?: StartEmulatorOptions;
@@ -697,7 +688,7 @@ export async function startAnalysis<
                     if (targetOptions?.managed || targetOptions?.startEmulatorOptions) {
                         // Create or start a new emulator
                         // eslint-disable-next-line require-atomic-updates
-                        emulator = await AndroidEmulator.fromRunTarget(targetOptions);
+                        emulator = await AndroidEmulator.fromRunTarget(targetOptions, analysisOptions.capabilities);
                         await emulator.start();
                     }
                 }
@@ -705,31 +696,41 @@ export async function startAnalysis<
                 const abortSignal = emulator?.getAbortSignal();
                 abortSignal?.throwIfAborted();
 
-                await Promise.race([
-                    (async () => {
-                        await platform.waitForDevice(150, { abortSignal });
+                await platform.waitForDevice(150, { abortSignal });
 
-                        if (emulator?.resetSnapshotName)
-                            await timeout(platform.resetDevice(emulator?.resetSnapshotName, { abortSignal }), {
-                                milliseconds: 5 * 60 * 1000,
-                                signal: abortSignal,
-                            });
+                if (emulator?.resetSnapshotName)
+                    await timeout(platform.resetDevice(emulator?.resetSnapshotName, { abortSignal }), {
+                        milliseconds: 5 * 60 * 1000,
+                        signal: abortSignal,
+                    });
 
-                        await platform.ensureDevice({ abortSignal });
+                await platform.ensureDevice({ abortSignal });
 
-                        if (emulator?.managed && !emulator?.resetSnapshotName) {
-                            // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
-                            const snapshotName = 'cyanoacrylate-ensured';
-                            await (
-                                platform as unknown as PlatformApi<'android', 'emulator', [], []>
-                            ).snapshotDeviceState(snapshotName, { abortSignal });
+                if (
+                    !emulator?.resetSnapshotName &&
+                    targetOptions?.managed &&
+                    (analysisOptions?.capabilities as unknown as SupportedCapability<'android'> | undefined)?.includes(
+                        'frida'
+                    ) &&
+                    targetOptions?.managedEmulatorOptions.honeyData
+                ) {
+                    // We only really need to add this honey data once, if we have a snapshot to load.
+                    const honeyData = targetOptions?.managedEmulatorOptions.honeyData;
+                    if (honeyData.clipboard) await platform.setClipboard(honeyData.clipboard);
+                    if (honeyData.deviceName) await platform.setDeviceName(honeyData.deviceName);
+                }
 
-                            // eslint-disable-next-line require-atomic-updates
-                            emulator.resetSnapshotName = snapshotName;
-                        }
-                    })(),
-                    abortSignal && rejectOnAbort(abortSignal),
-                ]);
+                if (emulator?.managed && !emulator?.resetSnapshotName) {
+                    // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
+                    const snapshotName = 'cyanoacrylate-ensured';
+                    await (platform as unknown as PlatformApi<'android', 'emulator', [], []>).snapshotDeviceState(
+                        snapshotName,
+                        { abortSignal }
+                    );
+
+                    // eslint-disable-next-line require-atomic-updates
+                    emulator.resetSnapshotName = snapshotName;
+                }
             } else {
                 await platform.ensureDevice();
             }

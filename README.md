@@ -77,7 +77,7 @@ The following example collects the traffic for an app in the Android emulator. I
 
 ### Use with multiple apps
 
-This library was designed in particular to enable long running analyses of many apps. If you want to do that, make sure to run `analysis.ensureDevice()` before every new app analysis, because it deals with any problems with the device and in particular emulator which might have come up in a previous analysis. If you leave the emulator management to cyanoacrylate, we might even rebuild the emulator completely from scratch. Also, you should wrap the app analysis in a `try {} catch () {}`-block, to catch any errors occurring in the emulator, which could be fixed by `ensureDevice`in a later run. The basic structure of an analysis might look like this:
+This library was designed in particular to enable long running analyses of many apps. If you want to do that, make sure to run `analysis.ensureDevice()` before every new app analysis, because it deals with any problems with the device and in particular emulator which might have come up in a previous analysis. If you leave the emulator management to cyanoacrylate, we might even rebuild the emulator completely from scratch. Also, you should wrap the app analysis in a `try {} catch () {}`-block, to catch any errors occurring in the emulator, which could be fixed by `ensureDevice` in a later run. The basic structure of an analysis might look like this:
 
 ```ts
 const analysis = await startAnalysis({
