@@ -149,7 +149,7 @@ Run target options for an Android emulator that is created, managed, and started
 | `managedEmulatorOptions.honeyData?` | { `clipboard?`: `string` ; `deviceName?`: `string`  } | Optional honey data to place on the device before creating the snapshot. |
 | `managedEmulatorOptions.honeyData.clipboard?` | `string` | Content to put into the clipboard. |
 | `managedEmulatorOptions.honeyData.deviceName?` | `string` | The device name to set, which shows up to other network or bluetooth devices. |
-| `managedEmulatorOptions.key` | `string` | A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{SHA1 hash of the options}[-headless]`. |
+| `managedEmulatorOptions.key` | `string` | A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the options}[-headless]`. |
 | `startEmulatorOptions?` | [`StartEmulatorOptions`](README.md#startemulatoroptions) | Options to configure how the emulator should be started by cyanoacrylate. |
 
 #### Defined in

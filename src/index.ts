@@ -329,7 +329,7 @@ export type AndroidEmulatorRunTargetOptionsManaged = {
     managedEmulatorOptions: {
         /**
          * A key to distinguish the emulator from other ones created by cyanoacrylate. All analyses using the same key
-         * will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{SHA1 hash of the
+         * will share an emulator. The created emulator will be named `cyanoacrylate-{key}-{MD5 hash of the
          * options}[-headless]`.
          */
         key: string;
@@ -709,12 +709,15 @@ export async function startAnalysis<
                 if (
                     !emulator?.resetSnapshotName &&
                     targetOptions?.managed &&
-                    (analysisOptions?.capabilities as unknown as SupportedCapability<'android'> | undefined)?.includes(
-                        'frida'
-                    ) &&
                     targetOptions?.managedEmulatorOptions.honeyData
                 ) {
                     // We only really need to add this honey data once, if we have a snapshot to load.
+                    if (
+                        !(
+                            analysisOptions?.capabilities as unknown as SupportedCapability<'android'> | undefined
+                        )?.includes('frida')
+                    )
+                        throw new Error('Error: Setting honey Data on the device requires the `frida` capability.');
                     const honeyData = targetOptions?.managedEmulatorOptions.honeyData;
                     if (honeyData.clipboard) await platform.setClipboard(honeyData.clipboard);
                     if (honeyData.deviceName) await platform.setDeviceName(honeyData.deviceName);

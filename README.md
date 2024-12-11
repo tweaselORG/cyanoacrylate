@@ -10,6 +10,7 @@ The current features include:
 - Starting and managing an Android emulator
 - Collecting HTTP(S) traffic in HAR format
 - Automatic CA management and WireGuard mitmproxy setup
+- Automatic management of (Android) emulators: Creating and destroying, snapshots, restarting and -building for error recovery
 
 ## Installation  
 
