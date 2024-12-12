@@ -67,13 +67,13 @@ Functions that can be used to instrument the device and analyze apps.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `ensureDevice` | (`options?`: { `forceRestart?`: `boolean` ; `killExisting?`: `boolean`  }) => `Promise`<`void`\> | Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an emulator and wait for it to boot if necessary and a name was provided in `targetOptions.startEmulatorOptions.emulatorName`. On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is chosen. |
+| `ensureDevice` | (`options?`: { `forceRestart?`: `boolean` ; `killExisting?`: `boolean` ; `resetEmulator?`: `boolean`  }) => `Promise`<`void`\> | Make sure that the selected device/emulator is connected/started and ready to be used with the selected capabilities, installing analysis dependencies on the target if necessary. In the case of Android emulators, depending on the [AndroidEmulatorRunTargetOptions](README.md#androidemulatorruntargetoptions) specified, this will also create and/or start the emulator if necessary. Unless you set `options.resetEmulator` to `false`, it will reset the emulator to a clean state. **`Remarks`** If you are running an analysis on multiple apps, make sure to run `ensureDevice()` before every new app analysis, because it deals with any problems with the target which might have come up in a previous analysis. If you use a managed emulator, it will even be rebuilt from scratch if it got corrupted. |
 | `ensureTrackingDomainResolution` | () => `Promise`<`void`\> | Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is interfering with the results. |
 | `platform` | [`PlatformApi`](README.md#platformapi)<`Platform`, `RunTarget`, `Capabilities`\> | A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). |
-| `resetDevice` | () => `Promise`<`void`\> | Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. |
+| `resetDevice` | () => `Promise`<`void`\> | Reset the emulator to the snapshot specified in `targetOptions.snapshotName` (in the case of unmanaged emulators) or the automatically created snapshot of the clean device just after setup with only dependencies and honey data (in the case of managed emulators). |
 | `startAppAnalysis` | (`appIdOrPath`: `string` \| `AppPath`<`Platform`\>, `options?`: { `noSigint?`: `boolean` ; `resetApp?`: `boolean`  }) => `Promise`<[`AppAnalysis`](README.md#appanalysis)<`Platform`, `RunTarget`, `Capabilities`\>\> | Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on the object when you are done with the app to clean up and retrieve the analysis data. |
 | `startTrafficCollection` | (`options?`: `Platform` extends ``"android"`` ? `TrafficCollectionOptions` : `never`) => `Promise`<`void`\> | Start collecting the device's traffic. On Android, this will start a WireGuard proxy on the host computer on port `51820`. It will automatically configure the target to use the WireGuard proxy and trust the mitmproxy TLS certificate. You can configure which apps to include using the `options` parameter. On iOS, this will start a mitmproxy HTTP(S) proxy on the host computer on port `8080`. It will automatically configure the target to use the proxy and trust the mitmproxy TLS certificate. You can not restrict the traffic collection to specific apps. Only one traffic collection can be active at a time. |
-| `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. |
+| `stop` | () => `Promise`<`void`\> | Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is started/managed by this library. |
 | `stopTrafficCollection` | () => `Promise`<[`TweaselHar`](README.md#tweaselhar)\> | Stop collecting the device's traffic. This will stop the proxy on the host computer. |
 
 #### Defined in
@@ -98,7 +98,7 @@ The options for the `startAnalysis()` function.
 
 #### Defined in
 
-[src/index.ts:428](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L428)
+[src/index.ts:446](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L446)
 
 ___
 
@@ -128,7 +128,7 @@ Run target options for an Android emulator. You can choose between the following
 
 #### Defined in
 
-[src/index.ts:389](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L389)
+[src/index.ts:407](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L407)
 
 ___
 
@@ -154,7 +154,7 @@ Run target options for an Android emulator that is created, managed, and started
 
 #### Defined in
 
-[src/index.ts:327](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L327)
+[src/index.ts:345](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L345)
 
 ___
 
@@ -174,7 +174,7 @@ Run target options for an Android emulator that the user creates, manages, and s
 
 #### Defined in
 
-[src/index.ts:301](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L301)
+[src/index.ts:319](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L319)
 
 ___
 
@@ -195,7 +195,7 @@ started by cyanoacrylate.
 
 #### Defined in
 
-[src/index.ts:313](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L313)
+[src/index.ts:331](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L331)
 
 ___
 
@@ -265,7 +265,7 @@ Functions that can be used to control an app analysis.
 
 #### Defined in
 
-[src/index.ts:174](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L174)
+[src/index.ts:192](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L192)
 
 ___
 
@@ -285,7 +285,7 @@ The result of an app analysis.
 
 #### Defined in
 
-[src/index.ts:261](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L261)
+[src/index.ts:279](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L279)
 
 ___
 
@@ -612,7 +612,7 @@ The options for a specific platform/run target combination.
 
 #### Defined in
 
-[src/index.ts:396](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L396)
+[src/index.ts:414](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L414)
 
 ___
 
@@ -636,7 +636,7 @@ Options to configure how the emulator should be started with the `emulator` comm
 
 #### Defined in
 
-[src/index.ts:278](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L278)
+[src/index.ts:296](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L296)
 
 ___
 
@@ -817,4 +817,4 @@ An object that can be used to instrument the device and analyze apps.
 
 #### Defined in
 
-[src/index.ts:462](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L462)
+[src/index.ts:480](https://github.com/tweaselORG/cyanoacrylate/blob/main/src/index.ts#L480)

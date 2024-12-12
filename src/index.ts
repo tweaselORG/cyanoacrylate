@@ -102,12 +102,17 @@ export type Analysis<
     /** A raw platform API object as returned by [appstraction](https://github.com/tweaselORG/appstraction). */
     platform: PlatformApi<Platform, RunTarget, Capabilities>;
     /**
-     * Assert that the selected device is connected and ready to be used with the selected capabilities. Will start an
-     * emulator and wait for it to boot if necessary and a name was provided in
-     * `targetOptions.startEmulatorOptions.emulatorName`.
+     * Make sure that the selected device/emulator is connected/started and ready to be used with the selected
+     * capabilities, installing analysis dependencies on the target if necessary.
      *
-     * On Android, installs and configures WireGuard on the target and the frida-server, if the `frida` capability is
-     * chosen.
+     * In the case of Android emulators, depending on the {@link AndroidEmulatorRunTargetOptions} specified, this will
+     * also create and/or start the emulator if necessary. Unless you set `options.resetEmulator` to `false`, it will
+     * reset the emulator to a clean state.
+     *
+     * @remarks
+     * If you are running an analysis on multiple apps, make sure to run `ensureDevice()` before every new app analysis,
+     * because it deals with any problems with the target which might have come up in a previous analysis. If you use a
+     * managed emulator, it will even be rebuilt from scratch if it got corrupted.
      */
     ensureDevice: (options?: {
         /**
@@ -117,13 +122,23 @@ export type Analysis<
         killExisting?: boolean;
         /** Whether to force restarting the emulator if it is already running (default: `false`). */
         forceRestart?: boolean;
+        /**
+         * Whether to reset the emulator to the snapshot specified in `targetOptions.snapshotName` (in the case of
+         * unmanaged emulators) or the automatically created snapshot of the clean device just after setup with only
+         * dependencies and honey data (in the case of managed emulators) (default: `true`).
+         */
+        resetEmulator?: boolean;
     }) => Promise<void>;
     /**
      * Assert that a few tracking domains can be resolved. This is useful to ensure that no DNS tracking blocker is
      * interfering with the results.
      */
     ensureTrackingDomainResolution: () => Promise<void>;
-    /** Reset the specified device to the snapshot specified in `targetOptions.snapshotName`. */
+    /**
+     * Reset the emulator to the snapshot specified in `targetOptions.snapshotName` (in the case of unmanaged emulators)
+     * or the automatically created snapshot of the clean device just after setup with only dependencies and honey data
+     * (in the case of managed emulators).
+     */
     resetDevice: () => Promise<void>;
     /**
      * Start an app analysis. The app analysis is controlled through the returned object. Remember to call `stop()` on
@@ -166,7 +181,10 @@ export type Analysis<
      * @returns The collected traffic in HAR format.
      */
     stopTrafficCollection: () => Promise<TweaselHar>;
-    /** Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is managed by this library. */
+    /**
+     * Stop the analysis. This is important for clean up, e.g. stopping the emulator if it is started/managed by this
+     * library.
+     */
     stop: () => Promise<void>;
 };
 
@@ -698,7 +716,7 @@ export async function startAnalysis<
 
                 await platform.waitForDevice(150, { abortSignal });
 
-                if (emulator?.resetSnapshotName)
+                if (emulator?.resetSnapshotName && ensureOptions?.resetEmulator !== false)
                     await timeout(platform.resetDevice(emulator?.resetSnapshotName, { abortSignal }), {
                         milliseconds: 5 * 60 * 1000,
                         signal: abortSignal,
