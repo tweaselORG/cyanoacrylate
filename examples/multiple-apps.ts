@@ -73,7 +73,7 @@ import { pause, startAnalysis } from '../src/index';
             console.log();
         } catch (error: any) {
             // Handle the error here, e.g. queue the app for analysis again etc.
-            console.error(error.message);
+            console.error(error.name, error.message);
         }
     }
 

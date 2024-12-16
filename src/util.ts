@@ -233,11 +233,21 @@ export const dnsLookup = promisify(dns.lookup);
  * The function tries to kill a child process gracefully by sending a SIGINT and if the process didn’t exit, it sends a
  * SIGKILL to force kill it.
  */
-export const killProcess = async (proc?: ExecaChildProcess) => {
+export const killProcess = async (
+    proc?: ExecaChildProcess,
+    options?: {
+        /**
+         * The number of milliseconds before trying to kill it using `SIGKILL`
+         *
+         * @default 15000
+         */
+        killTimeoutMs?: number;
+    }
+) => {
     if (proc) {
         if (process.platform === 'win32' && proc.pid) ctrlc(proc.pid);
         else proc.kill();
-        await timeout(proc, { milliseconds: 15000 }).catch(() => proc.kill(9));
+        await timeout(proc, { milliseconds: options?.killTimeoutMs ?? 15000 }).catch(() => proc.kill(9));
     }
 };
 

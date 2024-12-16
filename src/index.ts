@@ -149,14 +149,12 @@ export type Analysis<
      *
      *   - `resetApp`: Whether to reset (i.e. uninstall and then install) the app before starting the analysis (default:
      *       `false`). Otherwise, you have to install the app yourself using the `installApp()` function.
-     *   - `noSigint`: By default, this library registers a SIGINT handler to gracefully stop the analysis when the user
-     *       hits Ctrl+C. Set this option to `true` to disable this behavior.
      *
      * @returns An object to control the analysis of the specified app.
      */
     startAppAnalysis: (
         appIdOrPath: string | AppPath<Platform>,
-        options?: { resetApp?: boolean; noSigint?: boolean }
+        options?: { resetApp?: boolean }
     ) => Promise<AppAnalysis<Platform, RunTarget, Capabilities>>;
     /**
      * Start collecting the device's traffic.
@@ -518,6 +516,14 @@ export async function startAnalysis<
         | { proc: ExecaChildProcess; harOutputPath: string; wireguardConf?: string | null; events: MitmproxyEvent[] }
         | undefined;
 
+    // Register SIGINT listener to destroy the process if it is killed
+    const sigintListener = async () => {
+        process.removeListener('SIGINT', sigintListener);
+        await emulator?.kill();
+        process.exit();
+    };
+    process.on('SIGINT', sigintListener);
+
     const startTrafficCollection = async (options: TrafficCollectionOptions | undefined) => {
         if (trafficCollectionInProgress !== false)
             throw new Error('Cannot start new traffic collection. A previous one is still running.');
@@ -714,43 +720,50 @@ export async function startAnalysis<
                 const abortSignal = emulator?.getAbortSignal();
                 abortSignal?.throwIfAborted();
 
-                await platform.waitForDevice(150, { abortSignal });
+                try {
+                    await platform.waitForDevice(150, { abortSignal });
 
-                if (emulator?.resetSnapshotName && ensureOptions?.resetEmulator !== false)
-                    await timeout(platform.resetDevice(emulator?.resetSnapshotName, { abortSignal }), {
-                        milliseconds: 5 * 60 * 1000,
-                        signal: abortSignal,
-                    });
-
-                await platform.ensureDevice({ abortSignal });
-
-                if (
-                    !emulator?.resetSnapshotName &&
-                    targetOptions?.managed &&
-                    targetOptions?.managedEmulatorOptions.honeyData
-                ) {
-                    // We only really need to add this honey data once, if we have a snapshot to load.
                     if (
-                        !(
-                            analysisOptions?.capabilities as unknown as SupportedCapability<'android'> | undefined
-                        )?.includes('frida')
+                        analysisOptions.platform === 'android' &&
+                        analysisOptions.runTarget === 'emulator' &&
+                        emulator?.resetSnapshotName &&
+                        ensureOptions?.resetEmulator !== false
                     )
-                        throw new Error('Error: Setting honey Data on the device requires the `frida` capability.');
-                    const honeyData = targetOptions?.managedEmulatorOptions.honeyData;
-                    if (honeyData.clipboard) await platform.setClipboard(honeyData.clipboard);
-                    if (honeyData.deviceName) await platform.setDeviceName(honeyData.deviceName);
-                }
+                        await (this as unknown as Analysis<'android', 'emulator', []>).resetDevice();
 
-                if (emulator?.managed && !emulator?.resetSnapshotName) {
-                    // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
-                    const snapshotName = 'cyanoacrylate-ensured';
-                    await (platform as unknown as PlatformApi<'android', 'emulator', [], []>).snapshotDeviceState(
-                        snapshotName,
-                        { abortSignal }
-                    );
+                    await platform.ensureDevice({ abortSignal });
 
-                    // eslint-disable-next-line require-atomic-updates
-                    emulator.resetSnapshotName = snapshotName;
+                    if (
+                        !emulator?.resetSnapshotName &&
+                        targetOptions?.managed &&
+                        targetOptions?.managedEmulatorOptions.honeyData
+                    ) {
+                        // We only really need to add this honey data once, if we have a snapshot to load.
+                        if (
+                            !(
+                                analysisOptions?.capabilities as unknown as SupportedCapability<'android'> | undefined
+                            )?.includes('frida')
+                        )
+                            throw new Error('Error: Setting honey Data on the device requires the `frida` capability.');
+                        const honeyData = targetOptions?.managedEmulatorOptions.honeyData;
+                        if (honeyData.clipboard) await platform.setClipboard(honeyData.clipboard);
+                        if (honeyData.deviceName) await platform.setDeviceName(honeyData.deviceName);
+                    }
+
+                    if (emulator?.managed && !emulator?.resetSnapshotName) {
+                        // The emulator is managed by us, so let’s take a snapshot after we ensured for the first time.
+                        const snapshotName = 'cyanoacrylate-ensured';
+                        await (platform as unknown as PlatformApi<'android', 'emulator', [], []>).snapshotDeviceState(
+                            snapshotName,
+                            { abortSignal }
+                        );
+
+                        // eslint-disable-next-line require-atomic-updates
+                        emulator.resetSnapshotName = snapshotName;
+                    }
+                } catch (error: any) {
+                    if (!emulator?.hasExited) await emulator?.fail(error);
+                    throw error;
                 }
             } else {
                 await platform.ensureDevice();
@@ -791,10 +804,15 @@ export async function startAnalysis<
             const abortSignal = emulator?.getAbortSignal();
             abortSignal?.throwIfAborted();
 
-            return timeout(platform.resetDevice(snapshotName, { abortSignal }), {
-                milliseconds: 5 * 60 * 1000,
-                signal: abortSignal,
-            });
+            try {
+                await timeout(platform.resetDevice(snapshotName, { abortSignal }), {
+                    milliseconds: 5 * 60 * 1000,
+                    signal: abortSignal,
+                });
+            } catch (error: any) {
+                await emulator?.fail(error);
+                throw error;
+            }
         },
         startAppAnalysis: async (appIdOrPath, options) => {
             emulator?.getAbortSignal().throwIfAborted();
@@ -837,13 +855,6 @@ export async function startAnalysis<
                 await installApp();
             }
 
-            if (options?.noSigint !== true) {
-                process.removeAllListeners('SIGINT');
-                process.on('SIGINT', async () => {
-                    process.exit();
-                });
-            }
-
             return {
                 app: appMeta,
 
@@ -870,9 +881,6 @@ export async function startAnalysis<
 
                 stop: async (stopOptions) => {
                     if (stopOptions?.uninstallApp) await uninstallApp();
-
-                    if (options?.noSigint !== true) process.removeAllListeners('SIGINT');
-
                     return res;
                 },
             };
@@ -887,6 +895,7 @@ export async function startAnalysis<
                 // Clean up the emulator
                 await emulator?.kill();
             }
+            process.removeListener('SIGINT', sigintListener);
         },
     };
 }

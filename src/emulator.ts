@@ -6,7 +6,11 @@ import {
     type EmulatorOptions,
 } from 'andromatic';
 import { execa, type ExecaChildProcess, type ExecaError } from 'execa';
+import { existsSync } from 'fs';
+import { readdir } from 'fs/promises';
 import hashObject from 'hash-object';
+import { homedir } from 'os';
+import { join } from 'path';
 import type { AndroidEmulatorRunTargetOptions, SupportedCapability } from '.';
 import { killProcess } from './util';
 
@@ -39,12 +43,34 @@ export const deleteEmulator = async (emulatorName: string) => {
  */
 export const listSnapshots = async (): Promise<{ [name: string]: string[] }> => {
     // This returns a list of snapshots of all devices
-    const { stdout } = await runAndroidDevTool('emulator', ['-snapshot-list']);
-    return stdout.split('\n').reduce((acc, line) => {
-        const [emulatorName, snapshots] = line.replaceAll(/ |\t/g, '').split(':');
-        if (emulatorName && snapshots) acc = { [emulatorName]: snapshots?.split(',').filter((s) => s !== ''), ...acc };
-        return acc;
-    }, {});
+    try {
+        const { stdout } = await runAndroidDevTool('emulator', ['-snapshot-list']);
+        return stdout.split('\n').reduce((acc, line) => {
+            const [emulatorName, snapshots] = line.replaceAll(/ |\t/g, '').split(':');
+            if (emulatorName && snapshots)
+                acc = { [emulatorName]: snapshots?.split(',').filter((s) => s !== ''), ...acc };
+            return acc;
+        }, {});
+    } catch {
+        const avdDirectory = join(homedir(), '.android/avd');
+        return Object.fromEntries(
+            (
+                await Promise.all(
+                    (
+                        await readdir(avdDirectory, { withFileTypes: true })
+                    )
+                        .filter((entry) => entry.isDirectory() && entry.name.endsWith('.avd'))
+                        .map(async (folder) => {
+                            const emulatorName = folder.name.replace('.avd', '');
+                            const snaphotDir = join(avdDirectory, folder.name, 'snapshots');
+                            let snapshots: string[] = [];
+                            if (existsSync(snaphotDir)) snapshots = await readdir(snaphotDir);
+                            return [emulatorName, snapshots];
+                        })
+                )
+            ).filter((e) => e[1] && e[1].length > 0)
+        );
+    }
 };
 
 /** Delete a snapshot of the currently running emulator. */
@@ -71,7 +97,7 @@ export class AndroidEmulator {
     /** How often to try restarting. */
     restartLimit = 0;
     /** The error which produced the most recent crash. */
-    lastError: ExecaError | undefined;
+    lastError: Error | undefined;
     /** Whether the emulator is managed by cyanoacrylate completely. */
     managed = false;
     /** The options for `createEmulator()` used to create this emulator. Will be `undefined` if `managed` is `false`. */
@@ -227,18 +253,27 @@ Message of the last error: ${this.lastError?.message}`);
             // We need to rethrow the error in this context to halt execution.
             this._abortController.abort(EmulatorError.fromExecaError(error));
         });
-        this._proc.on('exit', () => (this.hasExited = true));
+        this._proc.on('exit', () => {
+            this.hasExited = true;
+            // This prevents a memory leak when we overwrite `this._proc`.
+            this._proc?.removeAllListeners();
+        });
         this.lastError = undefined;
         this.hasExited = false;
 
         return this._abortController.signal;
     }
 
+    async fail(error: Error) {
+        this.failedStarts++;
+        this.lastError = error;
+        this._abortController.abort(error);
+        await this.kill();
+    }
+
     /** Kills the emulator process if it is running. */
     async kill() {
-        await killProcess(this._proc);
-        // This prevents a memory leak when we overwrite `this._proc`.
-        this._proc?.removeAllListeners();
+        await killProcess(this._proc, { killTimeoutMs: 20000 });
     }
 
     /** Deletes and recreates the emulator with the same configuration as the current one. */
