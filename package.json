@@ -35,7 +35,7 @@
         "fix": "yarn eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx --fix",
         "postinstall": "node scripts/postinstall.js",
         "lint": "tsc && eslint . --ignore-path .gitignore --ext .js,.jsx,.ts,.tsx && git diff --check",
-        "prepack": "rm -rf dist && yarn build && yarn typedoc",
+        "prepack": "rm -rf .parcel-cache dist && yarn build && yarn typedoc",
         "print-version": "echo \"// Shim to make the version available at runtime. Auto-generated, please ignore.\nexport const cyanoacrylateVersion = '$npm_package_version';\" > src/version.gen.ts",
         "test": "echo 'TODO: No tests specified yet.'",
         "postversion": "yarn print-version && git add src/version.gen.ts",
